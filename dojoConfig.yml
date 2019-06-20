@@ -1,0 +1,14 @@
+# Default config for godojo installations
+
+install:
+  ddDojoVer: "1.5.3.1"
+  ddPrompt: true
+  ddInstallType: "Single Server"
+  ddDBType: "MySQL"
+
+settings:
+  ddDebug: false
+  ddLoginRedirectUrl: "/"
+  ddDjangoAdminEnabled: false
+  ddSessionCookieHTTPOnly: True
+
