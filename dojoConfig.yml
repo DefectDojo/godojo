@@ -1,14 +1,171 @@
 # Default config for godojo installations
 
-install:
-  ddDojoVer: "1.5.3.1"
-  ddPrompt: true
-  ddInstallType: "Single Server"
-  ddDBType: "MySQL"
+Install:
+  Version: "1.5.3.1"
+  Prompt: true
+  Set: "Single Server"
+  Root: "/opt/dojo"
+  Source: "django-DefectDojo"
+  Files: "local"
+  Media: "media"
+  Static: "static"
+  App: "dojo"
+  Sampledata: false
+  # Venv: install.root
+  DB:
+    Engine: "MySQL"
+    Local: true
+    Exists: false
+    Root: "vee0Thoanae1daePooz0ieka"
+    Name: "dojodb"
+    User: "dojodbusr"
+    Pass: "vee0Thoanae1daePooz0ieka"
+    Host: "localhost"
+    Port: 3306
+    Drop: false
+  OS:
+    User: "dojo-srv"
+    Pass: "wahlieboojoKa8aitheibai3"
+    Group: "dojo-srv"
+  Settings:
+    Dist: "/dojo/settings/settings.dist.py"
+    File: "/dojo/settings/settings.py"
+    # Env: "/scripts/common/install-env" - this is no longer needed.  vestige of setup.bash
+    Env: "/dojo/settings/.env.prod"
+  Admin:
+    User: "admin"
+    Pass: "admin"
+    Email: "admin@localhost"
 
-settings:
-  ddDebug: false
-  ddLoginRedirectUrl: "/"
-  ddDjangoAdminEnabled: false
-  ddSessionCookieHTTPOnly: True
+Settings:
+  Debug: false
+  Login:
+    Redirect:
+      Url: "/"
+  Django:
+    Admin:
+      Enabled: false
+  Session:
+    Cookie:
+      HTTPOnly: true
+  CSRF:
+    Cookie:
+      HTTPOnly: true
+    Secure: false
+  Secure:
+    SSL:
+      Redirect: true
+    HSTS:
+      Include:
+        Subdomains: false
+      Seconds: 31536000 # aka 1 year in seconds
+    Browser:
+        XSS:
+          Filter: false
+    Proxy:
+      SSL:
+        Header: false
+  Time:
+    Zone: "UTC"
+  Lang: "en-us"
+  Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf"
+  Team:
+    Name: "Security Team"
+  Admins: "DefectDojo:dojo@localhost,Admin:admin@localhost" # How is this different from the install admin user above?
+  Port:
+    Scan:
+      Contact:
+        Email: "email@localhost"
+      Result:
+          Email:
+            From: "email@localhost"
+      External:
+        Unit:
+          Email:
+            List: "email@localhost"
+      Source:
+        IP: "127.0.0.1"
+  Whitenoise: false
+  Track:
+    Migrations: false
+  Test:
+    Runner: "django.test.runner.DiscoverRunner"
+    Database:
+      Name: "test_defectdojo"
+  URL:
+    Prefix: ""
+  Root: "" # Calculated based on install time config
+  Language:
+    Code: "en-us"
+  Site:
+    ID: 1
+  Use:
+    I18N: true
+    L10N: true
+    TZ: true
+  Media:
+    Root: "" # Calcuated based on install time config
+    URL: "/media/"
+  Static:
+    Root: "" # Calcuated based on install time config
+    URL: "/static/"
+  Celery:
+    Broker:
+      URL: ""
+      Scheme: "sqla_sqlite"
+      User: ""
+      Password: ""
+      Host: ""
+      Port: -1
+      Path: "/dojo.celerydb.sqlite"
+    Task:
+      Ignore:
+        Result: true
+      Serializer: "pickle"
+    Result:
+      Backend: "django-db"
+      Expires: 86400
+    Beat:
+      Schedule:
+        Filename: "" # Calculated using DD_INSTALL_FILES + doj.celery.beat.db
+  Force:
+    Lowercase:
+      Tags: true
+  Max:
+    Tag:
+      Length: 25
+  Database:
+    Engine: "" # Calcuated based on install time config
+    Host: "" # Calcuated based on install time config
+    Name: "" # Calcuated based on install time config
+    Password: "" # Calcuated based on install time config
+    Port: "" # Calcuated based on install time config
+    User: "" # Calcuated based on install time config
+  Secret:
+    Key: "." # If unchanged, a random value will be generated at install time
+  Credential:
+    AES:
+      256:
+        Key: "." # If unchanged, a random value will be generated at install time
+  Data:
+    Upload:
+      Max:
+        Memory:
+          Size: 8388608 # aka 8 mb
+  Social:
+    Auth:
+      Google:
+        OAUTH2:
+          Key: ""
+          Secret: ""
+      Okta:
+        OAUTH2:
+          Key: ""
+          Secret: ""
+          API:
+            URL: ""
+  Allowed:
+    HostS: "'localhost','127.0.0.1'"
+  Email:
+      URL: "smtp://user@:password@localhost:25"
 
