@@ -13,3 +13,5 @@
 
 # Output of the runtime config from godojo
 runtime-install-config.yml
+notes.md
+logs

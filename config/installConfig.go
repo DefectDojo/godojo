@@ -7,10 +7,19 @@ type DojoConfig struct {
 
 type InstallConfig struct {
 	// Installer settings
-	Version     string // Holds the version of Dojo to check out from the repo
-	Prompt      bool
-	InstallType string
-	DB          DBTarget
+	ReleaseURL    string // URL to Github release WITHOUT the final file name
+	Version       string // Holds the version of Dojo to check out from the repo
+	SourceInstall bool   // If true, do a source install instead of a versioned release
+	SourceBranch  string // Branch to checkout for a source install
+	SourceCommit  string // head or commit hash to install a specific commit
+	Prompt        bool   // Prompt at run time for install config.  If true, user will be prompted
+	Set           string // The install set or type: Single Server, Dev, Stand-alone
+	Root          string // Install root defaults to /opt/dojo
+	Source        string // Directory to put the Dojo souce, child directory of Root
+	Files         string // Directory for locally generated files like uploads, static, media, etc
+	App           string // Directory where the Dojo Django app lives inside of Source above
+	Sampledata    bool   // Install the sample data if true, defaults to false
+	DB            DBTarget
 }
 
 type DBTarget struct {

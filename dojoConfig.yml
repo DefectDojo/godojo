@@ -1,7 +1,11 @@
 # Default config for godojo installations
 
 Install:
+  ReleaseURL: "https://github.com/DefectDojo/django-DefectDojo/archive/"
   Version: "1.5.3.1"
+  SourceInstall: false
+  SourceBranch: "dev"
+  SourceRelease: "head"
   Prompt: true
   Set: "Single Server"
   Root: "/opt/dojo"
