@@ -10,8 +10,9 @@ type InstallConfig struct {
 	ReleaseURL    string // URL to Github release WITHOUT the final file name
 	Version       string // Holds the version of Dojo to check out from the repo
 	SourceInstall bool   // If true, do a source install instead of a versioned release
-	SourceBranch  string // Branch to checkout for a source install
-	SourceCommit  string // head or commit hash to install a specific commit
+	SourceBranch  string // Branch to checkout for a source install, if SourceCommit isn't "", SourceBranch will be ignored
+	SourceCommit  string // head or full commit hash to install a specific commit, SourceBranch will be ignored if this isn't ""
+	Quiet         bool   // If true, suppress all output however logs will still be written in the log directory
 	Prompt        bool   // Prompt at run time for install config.  If true, user will be prompted
 	Set           string // The install set or type: Single Server, Dev, Stand-alone
 	Root          string // Install root defaults to /opt/dojo
