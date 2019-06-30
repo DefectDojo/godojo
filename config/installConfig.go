@@ -7,12 +7,12 @@ type DojoConfig struct {
 
 type InstallConfig struct {
 	// Installer settings
-	ReleaseURL    string // URL to Github release WITHOUT the final file name
 	Version       string // Holds the version of Dojo to check out from the repo
 	SourceInstall bool   // If true, do a source install instead of a versioned release
 	SourceBranch  string // Branch to checkout for a source install, if SourceCommit isn't "", SourceBranch will be ignored
 	SourceCommit  string // head or full commit hash to install a specific commit, SourceBranch will be ignored if this isn't ""
-	Quiet         bool   // If true, suppress all output however logs will still be written in the log directory
+	Quiet         bool   // If true, suppress all output except for very early errors - logs will still be written in the log directory
+	Trace         bool   // If true, log at the trace level
 	Prompt        bool   // Prompt at run time for install config.  If true, user will be prompted
 	Set           string // The install set or type: Single Server, Dev, Stand-alone
 	Root          string // Install root defaults to /opt/dojo
@@ -40,7 +40,7 @@ type SettingsConfig struct {
 	SecureHstsSeconds             int    // Number of seconds for HSTS, default 31536000 aka 1 year
 	CsrfCookieSecure              bool   // CSRF cookie has secure flag, default false
 	SecureBrowserXSSFilter        bool   // TODO, default false
-	TimeZone                      string // Time zone for Defect Dojo, default UTC
+	TimeZone                      string // Time zone for DefectDojo, default UTC
 	Lang                          string // Default language for Dojo, default en-us
 	Wkhtmltopdf                   string // path to wkhtmltopdf binary, default /usr/local/bin/wkhtmltopdf
 	TeamName                      string // Name of the team in dojo, default "Security Team"
@@ -93,16 +93,4 @@ type SettingsConfig struct {
 	SocialAuthOktaOAuth2Key       string // TODO, default ""
 	SocialAuthOktaOAuthSecret     string // TODO, default ""
 	SocialAuthOktaOAuthAPIURL     string // TODO, default "https://{your-org-url}/oauth2/default"
-}
-
-func TestConfig() string {
-	return "Worked"
-}
-
-func ReadInstallConfig() error {
-	// Read the config
-
-	// Set the default values
-
-	return nil
 }
