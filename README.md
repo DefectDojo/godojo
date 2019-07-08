@@ -3,7 +3,7 @@ Golang installer for DefectDojo
 
 ### Dependencies
 
-None, just download godojo for your platform + architechture and either:
+None, just download the godojo release (TBD) for your platform + architechture and either:
 
 1. Accept the default configuration
 2. Edit dojoConfig.yml to meet your needs
@@ -16,6 +16,11 @@ None, just download godojo for your platform + architechture and either:
 ```
 $ sudo godojo
 ```
+or
+```
+# godojo
+```
 
-* Installer can create a 'logs' directory where it run to write a log of the install
-* Installer can create a file in the directory where it is run to save the run config
+* Installer can create a 'logs' directory where the installer is run to write a log of the install
+* Installer can create a file in the directory where it is run to save the runtime config
+* Installer can create a base directory for the DefectDojo install (default is /opt/dojo).
