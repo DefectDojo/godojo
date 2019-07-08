@@ -2,11 +2,12 @@
 
 Install:
   Version: "1.5.3.1"
-  SourceInstall: true
+  SourceInstall: false
   SourceBranch: "dev"
   SourceCommit: "" # "17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
   Quiet: false
   Trace: true
+  Redact: true
   Prompt: true
   Set: "Single Server"
   Root: "/opt/dojo"
@@ -170,7 +171,7 @@ Settings:
           API:
             URL: ""
   Allowed:
-    HostS: "'localhost','127.0.0.1'"
+    Hosts: "'localhost','127.0.0.1'"
   Email:
       URL: "smtp://user@:password@localhost:25"
 

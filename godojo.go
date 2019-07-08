@@ -25,6 +25,8 @@ import (
 
 // Global vars
 var (
+	// Global config struct
+	conf config.DojoConfig
 	// For logging
 	logLocation = "logs"
 	Trace       *log.Logger
@@ -79,6 +81,8 @@ func sectionMsg(s string) {
 
 // Output a status message and log the same string
 func statusMsg(s string) {
+	// Redact sensitive info in redact is true
+	util.Redactatron(s, &conf)
 	// Pring status message if quiet isn't set
 	if !Quiet {
 		fmt.Printf("%s\n", s)
@@ -261,7 +265,6 @@ func main() {
 	// Setup viper config
 	viper.AddConfigPath(".")
 	viper.SetConfigName("dojoConfig")
-	var conf config.DojoConfig
 
 	// Setup ENV variables
 	viper.SetEnvPrefix("DD")

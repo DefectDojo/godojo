@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/mtesauro/godojo/config"
 )
 
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
@@ -71,4 +74,30 @@ func Untar(dst string, r io.Reader) error {
 			f.Close()
 		}
 	}
+}
+
+// Redactatron - redacts sensitive information from being written to the logs
+// Redaction is configurable with Install's Redact boolean config.
+// If true (the default), sensitive info will be redacted
+func Redactatron(l string, conf *config.DojoConfig) string {
+	// Redact sensitive info from the files in ./logs/
+	clean := l
+	if conf.Install.Redact {
+		// Config says to remove sentivite info from output
+		r := "REDACTED"
+		clean = strings.Replace(l, conf.Install.DB.Root, r, -1)
+		clean = strings.Replace(l, conf.Install.DB.Pass, r, -1)
+		clean = strings.Replace(l, conf.Install.OS.Pass, r, -1)
+		clean = strings.Replace(l, conf.Install.Admin.Pass, r, -1)
+		clean = strings.Replace(l, conf.Settings.Celery.Broker.Password, r, -1)
+		clean = strings.Replace(l, conf.Settings.Database.Password, r, -1)
+		clean = strings.Replace(l, conf.Settings.Secret.Key, r, -1)
+		clean = strings.Replace(l, conf.Settings.Credential.AES.B256.Key, r, -1)
+		clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Key, r, -1)
+		clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Secret, r, -1)
+		clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Key, r, -1)
+		clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Secret, r, -1)
+		// Add more lines here if new sensitive data is added to the DojoConfig struct
+	}
+	return clean
 }

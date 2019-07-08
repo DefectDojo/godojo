@@ -1,10 +1,12 @@
 package config
 
+// DojoConfig - "mother" struct to hold all the config options
 type DojoConfig struct {
 	Install  InstallConfig
 	Settings SettingsConfig
 }
 
+// InstallConfig - struct to hold the install time options
 type InstallConfig struct {
 	// Installer settings
 	Version       string // Holds the version of Dojo to check out from the repo
@@ -13,6 +15,7 @@ type InstallConfig struct {
 	SourceCommit  string // head or full commit hash to install a specific commit, SourceBranch will be ignored if this isn't ""
 	Quiet         bool   // If true, suppress all output except for very early errors - logs will still be written in the log directory
 	Trace         bool   // If true, log at the trace level
+	Redact        bool   // If true, redact sensitive information from being logged.  Defaults to true
 	Prompt        bool   // Prompt at run time for install config.  If true, user will be prompted
 	Set           string // The install set or type: Single Server, Dev, Stand-alone
 	Root          string // Install root defaults to /opt/dojo
@@ -21,76 +24,459 @@ type InstallConfig struct {
 	App           string // Directory where the Dojo Django app lives inside of Source above
 	Sampledata    bool   // Install the sample data if true, defaults to false
 	DB            DBTarget
+	OS            OSTarget
+	Settings      SettingsTarget
+	Admin         AdminTarget
 }
 
+// DBTarget - struct to hold Install.DB options
 type DBTarget struct {
 	Engine string
 	Local  bool
+	Exists bool
+	Root   string
+	Name   string
+	User   string
+	Pass   string
+	Host   string
+	Port   int
+	Drop   bool
 }
 
+// OSTarget - struct to hold Install.OS options
+type OSTarget struct {
+	User  string
+	Pass  string
+	Group string
+}
+
+// SettingsTarget - struct to hold Install.Settings options
+type SettingsTarget struct {
+	Dist string
+	File string
+	Env  string
+}
+
+// AdminTarget - struct to hold Install.Admin options
+type AdminTarget struct {
+	User  string
+	Pass  string
+	Email string
+}
+
+// SettingsConfig - struct to hold the config values for settings.py
 type SettingsConfig struct {
 	// Configs for settings.py
-	Debug                         bool   // Run Dojo in debug mode, default false
-	LoginRedirectURL              string // Where to redirect to after login, default "/"
-	DjangoAdminEnabled            bool   // Is Django's admin enabled, default false
-	SessionCookieHttponly         bool   // Add httponly cookie option to session, default true
-	CsrfCookieHttponly            bool   // Add httponly cookie option to csrf, default true
-	SecureSslRedirect             bool   // Redirect to https, default false
-	SecureHstsInclueSubdomains    bool   // Add HSTS header to include subdomains
-	SecureHstsSeconds             int    // Number of seconds for HSTS, default 31536000 aka 1 year
-	CsrfCookieSecure              bool   // CSRF cookie has secure flag, default false
-	SecureBrowserXSSFilter        bool   // TODO, default false
-	TimeZone                      string // Time zone for DefectDojo, default UTC
-	Lang                          string // Default language for Dojo, default en-us
-	Wkhtmltopdf                   string // path to wkhtmltopdf binary, default /usr/local/bin/wkhtmltopdf
-	TeamName                      string // Name of the team in dojo, default "Security Team"
-	Admins                        string // admin email addresses, default "DefectDojo:dojo@localhost,Admin:admin@localhost"
-	PortScanContactEmail          string // email address for port scans, default "email@localhost"
-	PortScanResultEmailFrom       string // email address port scan results are sent from, default "email@localhost"
-	PortScanExternalUnitEmailList string // TODO, default "email@localhost"
-	PortScanSourceIP              string // What souce IP to use for port scanning, default "127.0.0.1"
-	Whitenoise                    bool   // Should Whitenoise be used, default false
-	TrackMigrations               bool   // TODO, default false
-	SecureProxySslHeader          bool   // TODO, default false
-	TestRunner                    string // TODO, default "django.test.runner.DiscoverRunner"
-	URLPrefix                     string // Prefix to the Dojo URL, default ""
-	Root                          string // TODO, default "dojo"
-	LanguageCode                  string // TODO, default "en-us"
-	SiteID                        int    // TODO, default 1
-	UseI18N                       bool   // TODO, default true
-	UseL10n                       bool   // TODO, default true
-	UseTz                         bool   // TODO, default true
-	MediaURL                      string // URL prefix for Dojo media files, default "/media/"
-	MediaRoot                     string // File path to the directory to store media files, default ddRoot + "media"
-	StaticURL                     string // URL prefix for Dojo static files, default "/static/"
-	StaticRoot                    string // File path to the directory to store static files, default ddRoot + "static"
-	CeleryBrokerURL               string // TODO, default ""
-	CeleryBrokerScheme            string // TODO, default "sqla+sqlite"
-	CeleryBrokerUser              string // TODO, default ""
-	CeleryBrokerPassword          string // TODO, default ""
-	CeleryBrokerHost              string // TODO, default ""
-	CeleryBrokerPort              int    // TODO, default -1
-	CeleryBrokerPath              string // TODO, default "/dojo.celerydb.sqlite"
-	CeleryTaskIgnoreResult        bool   // TODO, default true
-	CeleryResultBackend           bool   // TODO, default "django-db"
-	CeleryResultExpires           int    // TODO, default 86400 aka 24 hours
-	CeleryBeatScheduleFilename    string // TODO, default ddRoot + "dojo.celery.beat.db"
-	CeleryTaskSerializer          string // TODO, default "pickle"
-	ForceLowercaseTags            bool   // Force all tags to be lowercase, default true
-	MaxTagLength                  int    // Max length for a tag in Dojo, default 25
-	DatabaseEngine                string // Database for Dojo to use, default "django.db.backends.mysql"
-	DatabaseHost                  string // Database host name, default "mysql"
-	DatabaseName                  string // Database name for Dojo to use, default "defectdojo"
-	TestDatabaseName              string // Database name used for testing, default "test_defectdojo"
-	DatabasePassword              string // Dojo database user password, default "defectdojo"
-	DatabasePort                  int    // Port that database is listening on, default 3306
-	DatabaseUser                  string // Database user for the Dojo database, default "defectdojo"
-	SecretKey                     string // TODO, default "."
-	CredentialAES256Key           string // TODO, default "."
-	DataUploadMaxMemorySize       int    // Max post size, default 8388608 aka 8 MB
-	SocialAuthGoogleOAuth2Key     string // TODO, default ""
-	SocialAuthGoogleOAuth2Secret  string // TODO, default ""
-	SocialAuthOktaOAuth2Key       string // TODO, default ""
-	SocialAuthOktaOAuthSecret     string // TODO, default ""
-	SocialAuthOktaOAuthAPIURL     string // TODO, default "https://{your-org-url}/oauth2/default"
+	Debug       bool // Run Dojo in debug mode, default false
+	Login       LoginSt
+	Django      DjangoSt
+	Session     SessionSt
+	CSRF        CSRFSt
+	Secure      SecureSt
+	Time        TimeSt
+	Lang        string
+	Wkhtmltopdf string
+	Team        TeamSt
+	Admins      string // May be redundant
+	Port        PortSt
+	Whitenoise  bool
+	Track       TrackSt
+	Test        TestSt
+	URL         URLSt
+	Root        string
+	Language    LanguageSt
+	Site        SiteSt
+	Use         UseSt
+	Media       MediaStatic
+	Static      MediaStatic
+	Celery      CelerySt
+	Force       ForceSt
+	Max         MaxSt
+	Database    DatabaseSt
+	Secret      SecretSt
+	Credential  CredentialSt
+	Data        DataSt
+	Social      SocialSt
+	Allowed     AllowedSt
+	Email       EmailUSt // WARNING - "U" Added to make definition unique
+}
+
+// LoginSt - struct for DD_LOGIN_REDIRECT_URL
+type LoginSt struct {
+	Redirect RedirectSt
+}
+
+// RedirectSt - struct for DD_LOGIN_REDIRECT_URL
+type RedirectSt struct {
+	URL string
+}
+
+// DjangoSt - struct for DD_DJANGO_ADMIN_ENABLED
+type DjangoSt struct {
+	Admin AdminSt
+}
+
+// AdminSt - struct for DD_DJANGO_ADMIN_ENABLED
+type AdminSt struct {
+	Enabled bool
+}
+
+// SessionSt - struct for DD_SESSION_COOKIE_HTTPONLY
+type SessionSt struct {
+	Cookie CookieSt
+	Secure bool
+}
+
+// CookieSt - struct for DD_SESSION_COOKIE_HTTPONLY
+type CookieSt struct {
+	HTTPOnly bool
+}
+
+// CSRFSt - struct for DD_CSFR_COOKIE_HTTPONLY and DD_CSRF_COOKIE_SECURE
+type CSRFSt struct {
+	Cookie CookieSt // Reuse struct above for DD_SESSION_COOKIE_HTTPONLY
+	Secure bool
+}
+
+// SecureSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type SecureSt struct {
+	SSL     SSLSt
+	HSTS    HSTSSt
+	Browser BrowserSt
+	Proxy   ProxySt
+}
+
+// SSLSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type SSLSt struct {
+	Redirect bool
+}
+
+// HSTSSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type HSTSSt struct {
+	Include IncludeSt
+	Seconds uint32
+}
+
+// IncludeSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type IncludeSt struct {
+	Subdomains bool
+}
+
+// BrowserSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type BrowserSt struct {
+	XSS XSSSt
+}
+
+// XSSSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type XSSSt struct {
+	Filter bool
+}
+
+// ProxySt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type ProxySt struct {
+	PSSL PSSLSt // WARNING - "P" Added to make definition unique
+}
+
+// PSSLSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS
+// DD_SECURE_BROWSER_XSS_FILTER, and DD_SECURE_PROXY_SSL_HEADER
+type PSSLSt struct {
+	Header bool
+}
+
+// TimeSt - struct for DD_TIME_ZONE
+type TimeSt struct {
+	Zone string
+}
+
+// TeamSt - struct for DD_TEAM_NAME
+type TeamSt struct {
+	Name string
+}
+
+// PortSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type PortSt struct {
+	Scan ScanSt
+}
+
+// ScanSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type ScanSt struct {
+	Contact  ContactSt
+	Result   ResultSt
+	External ExternalSt
+	Source   SourceSt
+}
+
+// ContactSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type ContactSt struct {
+	Email string
+}
+
+// ResultSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type ResultSt struct {
+	Email EmailSt
+}
+
+// EmailSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type EmailSt struct {
+	From string
+}
+
+// ExternalSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type ExternalSt struct {
+	Unit UnitSt
+}
+
+// UnitSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type UnitSt struct {
+	Email UEmailSt // WARNING - "U" Added to make definition unique
+}
+
+// UEmailSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type UEmailSt struct {
+	List string
+}
+
+// SourceSt - struct for DD_PORT_SCAN_CONTACT_EMAIL, DD_PORT_SCAN_RESULT_EMAIL_FROM, DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST,
+// and DD_PORT_SCAN_SOURCE_IP
+type SourceSt struct {
+	IP string
+}
+
+// TrackSt - struct for DD_TRACK_MIGRATIONS
+type TrackSt struct {
+	Migrations bool
+}
+
+// TestSt - struct for DD_TEST_RUNNER and DD_TEST_DATABASE_NAME
+type TestSt struct {
+	Runner   string
+	Database TDatabaseSt
+}
+
+// TDatabaseSt - struct for DD_TEST_RUNNER and DD_TEST_DATABASE_NAME
+type TDatabaseSt struct {
+	Name string
+}
+
+// URLSt - struct for DD_URL_PREFIX
+type URLSt struct {
+	Prefix string
+}
+
+// LanguageSt - struct for DD_LANGUAGE_CODE
+type LanguageSt struct {
+	Code string
+}
+
+// SiteSt - struct for DD_SITE_ID
+type SiteSt struct {
+	ID int
+}
+
+// UseSt - struct for DD_USE_I18N, DD_USE_L10N, and DD_USE_TZ
+type UseSt struct {
+	I18N bool
+	L10N bool
+	TZ   bool
+}
+
+// MediaStatic - stuct for DD_MEDIA_ROOT and DD_MEDIA_URL plus DD_STATIC_ROOT and DD_STATIC_URL
+type MediaStatic struct { // Used for Media and Static config items since they are the same
+	Root string
+	URL  string
+}
+
+// CelerySt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type CelerySt struct {
+	Broker BrokerSt
+	Task   TaskSt
+	Result CResultSt // WARNING - "C" Added to make definition unique
+	Beat   BeatSt
+}
+
+// BrokerSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type BrokerSt struct {
+	URL      string
+	Scheme   string
+	User     string
+	Password string
+	Host     string
+	Port     int
+	Path     string
+}
+
+// TaskSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type TaskSt struct {
+	Ignore     IgnoreSt
+	Serializer string
+}
+
+// IgnoreSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type IgnoreSt struct {
+	Result bool
+}
+
+// CResultSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type CResultSt struct {
+	Backend string
+	Expires int
+}
+
+// BeatSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type BeatSt struct {
+	Schedule ScheduleSt
+}
+
+// ScheduleSt - struct for DD_CELERY_BROKER_URL, DD_CELERY_BROKER_SCHEME, DD_CELERY_BROKER_USER, DD_CELERY_BROKER_PASSWORD,
+// DD_CELERY_BROKER_HOST, DD_CELERY_BROKER_PORT, DD_CELERY_BROKER_PATH, DD_CELERY_TASK_IGNORE_RESULT,
+// DD_CELERY_RESULT_BACKEND, DD_CELERY_RESULT_EXPIRES, DD_CELERY_BEAT_SCHEDULE_FILENAME
+type ScheduleSt struct {
+	Filename string
+}
+
+// ForceSt - struct for DD_FORCE_LOWERCASE_TAGS
+type ForceSt struct {
+	Lowercase LowercaseSt
+}
+
+// LowercaseSt - struct for DD_FORCE_LOWERCASE_TAGS
+type LowercaseSt struct {
+	tags bool
+}
+
+// MaxSt - struct for DD_MAX_TAG_LENGTH
+type MaxSt struct {
+	Tag TagSt
+}
+
+// TagSt - struct for DD_MAX_TAG_LENGTH
+type TagSt struct {
+	Length int
+}
+
+// DatabaseSt - struct for DD_DATABSE_ENGINE, DD_DATABSE_HOST, DD_DATABSE_NAME, DD_DATABSE_PASSWORD, DD_DATABSE_PORT,
+// DD_DATABSE_USER
+type DatabaseSt struct {
+	Engine   string
+	Host     string
+	Name     string
+	Password string
+	Port     string
+	User     string
+}
+
+// SecretSt - struct for DD_SECRET_KEY
+type SecretSt struct {
+	Key string
+}
+
+// CredentialSt - struct for DD_CREDENTIAL_AES_256_KEY
+type CredentialSt struct {
+	AES AESSt
+}
+
+// AESSt - struct for DD_CREDENTIAL_AES_256_KEY
+type AESSt struct {
+	B256 B256St
+}
+
+// B256St - struct for DD_CREDENTIAL_AES_256_KEY
+type B256St struct {
+	Key string
+}
+
+// DataSt - struct for DD_DATA_UPLOAD_MAX_MEMORY_SIZE
+type DataSt struct {
+	Upload UploadSt
+}
+
+// UploadSt - struct for DD_DATA_UPLOAD_MAX_MEMORY_SIZE
+type UploadSt struct {
+	Max UMaxSt // WARNING - "U" Added to make definition unique
+}
+
+// UMaxSt - struct for DD_DATA_UPLOAD_MAX_MEMORY_SIZE
+type UMaxSt struct {
+	Memory MemorySt
+}
+
+// MemorySt - struct for DD_DATA_UPLOAD_MAX_MEMORY_SIZE
+type MemorySt struct {
+	Size uint64
+}
+
+// SocialSt - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type SocialSt struct {
+	Auth AuthSt
+}
+
+// AuthSt - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type AuthSt struct {
+	Google GoogleSt
+	Okta   OktaSt
+}
+
+// GoogleSt - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type GoogleSt struct {
+	OAUTH2 OAUTH2St
+}
+
+// OAUTH2St - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type OAUTH2St struct { // Overloaded to hold data for both Google and Okta - Google only uses Key and Secret
+	Key    string
+	Secret string
+	API    APISt
+}
+
+// APISt - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type APISt struct {
+	URL string
+}
+
+// OktaSt - struct for DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY,
+// DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET, DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL
+type OktaSt struct {
+	OAUTH2 OAUTH2St // Struct shared with Google above ^
+}
+
+// AllowedSt - struct for DD_ALLOWED_HOSTS
+type AllowedSt struct {
+	Hosts string
+}
+
+// EmailUSt - struct for DD_EMAIL_URL
+type EmailUSt struct {
+	URL string
 }
