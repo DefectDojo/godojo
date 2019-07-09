@@ -1,12 +1,12 @@
-package util
+package main
 
 import (
 	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mtesauro/godojo/config"
 )
@@ -82,49 +82,31 @@ func Untar(dst string, r io.Reader) error {
 func Redactatron(l string, on bool) string {
 	// Redact sensitive info from the files in ./logs/
 	clean := l
-	//if conf.Install.Redact {
+	r := "=[REDACTED]="
+	// Redact sensitive data if it's turned on
 	if on {
-		// Config says to remove sentivite info from output
-		r := "REDACTED"
-		fmt.Printf("FIXME = %+v\n", r)
-		//clean = strings.Replace(l, conf.Install.DB.Root, r, -1)
-		//clean = strings.Replace(l, conf.Install.DB.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Install.OS.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Install.Admin.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Celery.Broker.Password, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Database.Password, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Secret.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Credential.AES.B256.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Secret, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Secret, r, -1)
-		// Add more lines here if new sensitive data is added to the DojoConfig struct
+		for i := 0; i < len(sensStr); i++ {
+			if strings.Contains(clean, sensStr[i]) {
+				clean = strings.Replace(clean, sensStr[0], r, -1)
+			}
+		}
 	}
 	return clean
 }
 
 // InitRedactatron - sets up the data to be redacted by Redactatron
-func InitRedactatron(conf *config.DojoConfig) string {
-	// Redact sensitive info from the files in ./logs/
-	clean := "FIXME" //TODO
-	if true {
-		// Config says to remove sentivite info from output
-		r := "REDACTED"
-		fmt.Printf("FIXME = %+v\n", r)
-		//clean = strings.Replace(l, conf.Install.DB.Root, r, -1)
-		//clean = strings.Replace(l, conf.Install.DB.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Install.OS.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Install.Admin.Pass, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Celery.Broker.Password, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Database.Password, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Secret.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Credential.AES.B256.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Google.OAUTH2.Secret, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Key, r, -1)
-		//clean = strings.Replace(l, conf.Settings.Social.Auth.Okta.OAUTH2.Secret, r, -1)
-		// Add more lines here if new sensitive data is added to the DojoConfig struct
-	}
-	return clean
+func InitRedact(conf *config.DojoConfig) {
+	// Add the strings from DojoConfig to be redacted
+	sensStr[0] = conf.Install.DB.Root
+	sensStr[1] = conf.Install.DB.Pass
+	sensStr[2] = conf.Install.OS.Pass
+	sensStr[3] = conf.Install.Admin.Pass
+	sensStr[4] = conf.Settings.Celery.Broker.Password
+	sensStr[5] = conf.Settings.Database.Password
+	sensStr[6] = conf.Settings.Secret.Key
+	sensStr[7] = conf.Settings.Credential.AES.B256.Key
+	sensStr[8] = conf.Settings.Social.Auth.Google.OAUTH2.Key
+	sensStr[9] = conf.Settings.Social.Auth.Google.OAUTH2.Secret
+	sensStr[10] = conf.Settings.Social.Auth.Okta.OAUTH2.Key
+	sensStr[11] = conf.Settings.Social.Auth.Okta.OAUTH2.Secret
 }

@@ -2,7 +2,6 @@ package main
 
 // TODO:
 // Add Cobra for command-line args - https://github.com/spf13/cobra
-// Add redactatron function like prior installer
 import (
 	"fmt"
 	"io"
@@ -18,7 +17,6 @@ import (
 	"time"
 
 	"github.com/mtesauro/godojo/config"
-	"github.com/mtesauro/godojo/util"
 	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -29,7 +27,8 @@ var (
 	// Installer version
 	version = "0.1.0"
 	// Global config struct
-	conf config.DojoConfig
+	conf    config.DojoConfig
+	sensStr [12]string // Hold sensitive strings to redact
 	// For logging
 	logLocation = "logs"
 	Trace       *log.Logger
@@ -90,7 +89,7 @@ func sectionMsg(s string) {
 // Output a status message and log the same string
 func statusMsg(s string) {
 	// Redact sensitive info in redact is true
-	util.Redactatron(s, Redact)
+	Redactatron(s, Redact)
 	// Pring status message if quiet isn't set
 	if !Quiet {
 		fmt.Printf("%s\n", s)
@@ -172,7 +171,7 @@ func getDojoRelease(i *config.InstallConfig) error {
 		traceMsg(fmt.Sprintf("Error openging tarball was: %+v", err))
 		return err
 	}
-	err = util.Untar(i.Root, tb)
+	err = Untar(i.Root, tb)
 	if err != nil {
 		traceMsg(fmt.Sprintf("Error extracting tarball was: %+v", err))
 		return err
@@ -272,7 +271,7 @@ func getDojoSource(i *config.InstallConfig) error {
 func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
-	_, err := o.Write([]byte("# " + util.Redactatron(cmd, Redact) + "\n"))
+	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
 	if err != nil {
 		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
 	}
@@ -325,6 +324,8 @@ func main() {
 	if !Quiet {
 		dojoBanner()
 	}
+	// Setup strings to be redacted
+	InitRedact(&conf)
 
 	// Check that user is root for the installer or run with "sudo godojo"
 	usr, err := user.Current()
@@ -437,6 +438,12 @@ func main() {
 	}
 
 	// Start stub'ing out stuff
+	statusMsg("TEST of sendCmd....")
+	sendCmd(cmdFile,
+		"ls -lah ./",
+		"Testing the sendCmd function",
+		false)
+
 	// Look at setup.bash's high-level workflow
 	fmt.Printf("\n\nSuccefully reached the end of main in godojo version %+v\n", version)
 }
