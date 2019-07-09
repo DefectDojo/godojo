@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -25,6 +26,8 @@ import (
 
 // Global vars
 var (
+	// Installer version
+	version = "0.1.0"
 	// Global config struct
 	conf config.DojoConfig
 	// For logging
@@ -36,6 +39,11 @@ var (
 	// For Global config flags
 	Quiet   bool
 	TraceOn bool
+	Redact  bool
+)
+
+// Global Constants
+const (
 	// URLs needed by the installer
 	HelpURL    = "https://github.com/mtesauro/godojo"
 	ReleaseURL = "https://github.com/DefectDojo/django-DefectDojo/archive/"
@@ -82,7 +90,7 @@ func sectionMsg(s string) {
 // Output a status message and log the same string
 func statusMsg(s string) {
 	// Redact sensitive info in redact is true
-	util.Redactatron(s, &conf)
+	util.Redactatron(s, Redact)
 	// Pring status message if quiet isn't set
 	if !Quiet {
 		fmt.Printf("%s\n", s)
@@ -114,7 +122,7 @@ func traceMsg(s string) {
 // getDojo retrives the supplied version of DefectDojo from the Git repo
 // and places it in the specified dojoSource directory (default is /opt/dojo)
 func getDojoRelease(i *config.InstallConfig) error {
-	statusMsg("Downloading the configured release of DefectDojo")
+	statusMsg(fmt.Sprintf("Downloading the configured release of DefectDojo version %+v", i.Version))
 
 	// Setup needed info
 	dwnURL := ReleaseURL + i.Version + ".tar.gz"
@@ -261,6 +269,29 @@ func getDojoSource(i *config.InstallConfig) error {
 	return nil
 }
 
+func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
+	// Setup command
+	runCmd := exec.Command("bash", "-c", cmd)
+	_, err := o.Write([]byte("# " + util.Redactatron(cmd, Redact) + "\n"))
+	if err != nil {
+		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
+	}
+
+	// Run and gather its output
+	cmdOut, err := runCmd.CombinedOutput()
+	if err != nil {
+		errorMsg(fmt.Sprintf("Failed to run OS command, error was: %+v", err))
+		if hard {
+			// Exit on hard errors
+			os.Exit(1)
+		}
+	}
+	_, err = o.Write(cmdOut)
+	if err != nil {
+		errorMsg(fmt.Sprintf("Failed to write to OS command log file, error was: %+v", err))
+	}
+}
+
 func main() {
 	// Setup viper config
 	viper.AddConfigPath(".")
@@ -290,6 +321,7 @@ func main() {
 	// Setup output and logging levels and print the DefectDojo banner if needed
 	Quiet = conf.Install.Quiet
 	TraceOn = conf.Install.Trace
+	Redact = conf.Install.Redact
 	if !Quiet {
 		dojoBanner()
 	}
@@ -352,7 +384,26 @@ func main() {
 	traceMsg("Logging established, trace log begins here")
 	sectionMsg("Starting the dojo install at " + n.Format("Mon Jan 2, 2006 15:04:05 MST"))
 
+	// Setup OS command logging
+	traceMsg("Creating log file for OS command output for debugging reasons")
+	cmdLog := "cmd-output_" + when + ".log"
+	cmdPath := path.Join(logLocation, cmdLog)
+	// Create command output log file in the existing logging directory
+	cmdFile, err := os.OpenFile(cmdPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("")
+		fmt.Println("##############################################################################")
+		fmt.Printf("  ERROR: Failed to open OS Command log file %s.  Error was:\n    %+v\n", cmdPath, err)
+		fmt.Println("##############################################################################")
+		fmt.Println("")
+		fmt.Println("Log files are required for the install, exiting install")
+		os.Exit(1)
+	}
+	traceMsg(fmt.Sprintf("Successfully created OS Command log file at %+v", cmdPath))
+	fmt.Printf("cmdFile = %+v\n", cmdFile)
+
 	// Write out the runtime config based on the net of the config file + ENV variables
+	// TODO: Consider moving this closer to the end of main
 	traceMsg("Writing out the runtime install configuration file")
 	err = viper.WriteConfigAs("runtime-install-config.yml")
 	if err != nil {
@@ -387,5 +438,5 @@ func main() {
 
 	// Start stub'ing out stuff
 	// Look at setup.bash's high-level workflow
-	fmt.Println("\n\nSuccefully reached the end of main")
+	fmt.Printf("\n\nSuccefully reached the end of main in godojo version %+v\n", version)
 }
