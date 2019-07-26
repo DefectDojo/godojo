@@ -4,11 +4,11 @@ Install:
   Version: "1.5.3.1"
   SourceInstall: false
   SourceBranch: "dev"
-  SourceCommit: "" # "17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
+  SourceCommit:  #"17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
   Quiet: false
   Trace: true
   Redact: true
-  Prompt: true
+  Prompt: false
   Set: "Single Server"
   Root: "/opt/dojo"
   Source: "django-DefectDojo"

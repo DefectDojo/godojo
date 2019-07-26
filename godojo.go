@@ -16,9 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/mtesauro/godojo/config"
 	"github.com/spf13/viper"
-	"gopkg.in/src-d/go-git.v4"
+	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
@@ -39,6 +40,8 @@ var (
 	Quiet   bool
 	TraceOn bool
 	Redact  bool
+	// Spinner FTW
+	Spin spinner.Spinner
 )
 
 // Global Constants
@@ -69,7 +72,7 @@ func dojoBanner() {
 	fmt.Println("")
 	fmt.Println("  Welcome to goDojo, the official way to install DefectDojo.")
 	fmt.Println("  For more information on how goDojo does an install, see:")
-	fmt.Print("  %s", HelpURL)
+	fmt.Printf("  %s", HelpURL)
 	fmt.Println("")
 }
 
@@ -121,7 +124,23 @@ func traceMsg(s string) {
 // getDojo retrives the supplied version of DefectDojo from the Git repo
 // and places it in the specified dojoSource directory (default is /opt/dojo)
 func getDojoRelease(i *config.InstallConfig) error {
-	statusMsg(fmt.Sprintf("Downloading the configured release of DefectDojo version %+v", i.Version))
+	statusMsg(fmt.Sprintf("Downloading the configured release of DefectDojo => version %+v", i.Version))
+	s := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	s.Prefix = "Downloading release..."
+	s.Start()
+
+	// Create the directory to clone the source into if it doesn't exist already
+	traceMsg("Creating the Dojo root directory if it doesn't exist already")
+	_, err := os.Stat(i.Root)
+	if err != nil {
+		// Source directory doesn't exist
+		err = os.MkdirAll(i.Root, 0755)
+		if err != nil {
+			traceMsg(fmt.Sprintf("Error creating Dojo root directory was: %+v", err))
+			// TODO: Better handle the case when the repo already exists at that path - maybe?
+			return err
+		}
+	}
 
 	// Setup needed info
 	dwnURL := ReleaseURL + i.Version + ".tar.gz"
@@ -188,6 +207,7 @@ func getDojoRelease(i *config.InstallConfig) error {
 	}
 
 	// Successfully extracted the file, return nil
+	s.Stop()
 	statusMsg("Successfully downloaded and extracted the DefectDojo release file")
 	return nil
 }
@@ -196,6 +216,8 @@ func getDojoRelease(i *config.InstallConfig) error {
 // and places it in the specified dojoSource directory (default is /opt/dojo)
 func getDojoSource(i *config.InstallConfig) error {
 	statusMsg("Downloading DefectDojo source as a branch or commit from the repo directly")
+	s := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	s.Prefix = "Downloading DefectDojo source..."
 
 	// Create the directory to clone the source into if it doesn't exist already
 	traceMsg("Creating source directory if it doesn't exist already")
@@ -218,6 +240,7 @@ func getDojoSource(i *config.InstallConfig) error {
 	if len(i.SourceCommit) > 0 {
 		// Commit is set, so it will be used and branch ignored
 		statusMsg(fmt.Sprintf("Dojo will be installed from commit %+v", i.SourceCommit))
+		s.Start()
 
 		// Do the initial clone of DefectDojo from Github
 		traceMsg(fmt.Sprintf("Intial clone of %+v", CloneURL))
@@ -245,7 +268,8 @@ func getDojoSource(i *config.InstallConfig) error {
 			traceMsg(fmt.Sprintf("Error checking out Dojo source was: %+v", err))
 			return err
 		}
-		statusMsg(fmt.Sprintf("DefectDojo will be installed from branch %+v", i.SourceBranch))
+		statusMsg(fmt.Sprintf("DefectDojo will be installed from %+v branch", i.SourceBranch))
+		s.Start()
 
 		// Check out a specfic branch
 		// Note: Branch and tag references are a bit odd, see https://github.com/src-d/go-git/blob/master/_examples/branch/main.go#L33
@@ -264,6 +288,7 @@ func getDojoSource(i *config.InstallConfig) error {
 	}
 
 	// Successfully checked out the configured source, return nil
+	s.Stop()
 	statusMsg("Successfully checked out the configured DefectDojo source")
 	return nil
 }
@@ -281,7 +306,7 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	if err != nil {
 		errorMsg(fmt.Sprintf("Failed to run OS command, error was: %+v", err))
 		if hard {
-			// Exit on hard errors
+			// Exit on hard aka fatal errors
 			os.Exit(1)
 		}
 	}
@@ -401,7 +426,6 @@ func main() {
 		os.Exit(1)
 	}
 	traceMsg(fmt.Sprintf("Successfully created OS Command log file at %+v", cmdPath))
-	fmt.Printf("cmdFile = %+v\n", cmdFile)
 
 	// Write out the runtime config based on the net of the config file + ENV variables
 	// TODO: Consider moving this closer to the end of main
@@ -411,6 +435,31 @@ func main() {
 		errorMsg(fmt.Sprintf("Error from writing the runtime config was: %+v", err))
 		os.Exit(1)
 	}
+
+	// Check install OS
+	// TODO: write OS determination, for now hard code to Ubuntu 18.04
+	target := targetOS{}
+	target.distro = "ubuntu"
+	target.release = "18.04"
+	target.id = target.distro + ":" + target.release
+
+	// Bootstrap installer
+	sectionMsg("Bootstrapping the godojo installer")
+	bs := bootstrap{}
+	initBootstrap(target.id, &bs)
+
+	Spin := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	Spin.Prefix = "Bootstrapping..."
+	Spin.Start()
+	for i, _ := range bs.cmds {
+		//for i := 0; i < len(bs.cmds); i++ {
+		sendCmd(cmdFile,
+			bs.cmds[i],
+			bs.errmsg[i],
+			bs.hard[i])
+	}
+	Spin.Stop()
+	statusMsg("Boostraping godojo installer complete")
 
 	sectionMsg("Downloading the source for DefectDojo")
 
@@ -437,13 +486,26 @@ func main() {
 
 	}
 
-	// Start stub'ing out stuff
-	statusMsg("TEST of sendCmd....")
-	sendCmd(cmdFile,
-		"ls -lah ./",
-		"Testing the sendCmd function",
-		false)
+	// Stup for prompting for install-time items
+	if conf.Install.Prompt {
+		sectionMsg("Prompt set to true, interactive installation beginning")
+		fmt.Println("TODO: Write prompting code")
+	} else {
+		sectionMsg("Prompt set to false, non-interactive installation")
+	}
+
+	// OS Installs
+
+	// DB (if needed)
+
+	// Django/Python installs
+
+	// Static items
+
+	// Celery / RabitMQ
+
+	// Optional Installs
 
 	// Look at setup.bash's high-level workflow
-	fmt.Printf("\n\nSuccefully reached the end of main in godojo version %+v\n", version)
+	statusMsg(fmt.Sprintf("\n\nSuccessfully reached the end of main in godojo version %+v", version))
 }
