@@ -437,11 +437,15 @@ func main() {
 	}
 
 	// Check install OS
-	// TODO: write OS determination, for now hard code to Ubuntu 18.04
+	sectionMsg("Determining OS for installation")
+
+	// TODO: write OS determination code for OS X
+	// TODO: test OS detection on Alpine Linux docker
 	target := targetOS{}
-	target.distro = "ubuntu"
-	target.release = "18.04"
-	target.id = target.distro + ":" + target.release
+	determineOS(&target)
+
+	statusMsg(fmt.Sprintf("OS was determined to be %+v, %+v", strings.Title(target.os), strings.Title(target.id)))
+	statusMsg("DefectDojo installation on this OS is supported, continuing")
 
 	// Bootstrap installer
 	sectionMsg("Bootstrapping the godojo installer")
@@ -460,6 +464,14 @@ func main() {
 	}
 	Spin.Stop()
 	statusMsg("Boostraping godojo installer complete")
+
+	sectionMsg("Checking for Python 3")
+	if checkPythonVersion() {
+		statusMsg("Python 3 found, install can continue")
+	} else {
+		errorMsg("Python 3 wasn't found, quitting installer")
+		os.Exit(1)
+	}
 
 	sectionMsg("Downloading the source for DefectDojo")
 
