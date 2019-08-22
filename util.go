@@ -3,6 +3,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,7 +22,13 @@ func Untar(dst string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer func() {
+		err := gzr.Close()
+		if err != nil {
+			errorMsg(fmt.Sprintf("Unable to close the gzip reader\nError was %v", err))
+			os.Exit(1)
+		}
+	}()
 
 	tr := tar.NewReader(gzr)
 
@@ -71,7 +78,10 @@ func Untar(dst string, r io.Reader) error {
 
 			// manually close here after each file operation; defering would cause each file close
 			// to wait until all operations have completed.
-			f.Close()
+			err = f.Close()
+			if err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -94,7 +104,7 @@ func Redactatron(l string, on bool) string {
 	return clean
 }
 
-// InitRedactatron - sets up the data to be redacted by Redactatron
+// InitRedact - sets up the data to be redacted by Redactatron
 func InitRedact(conf *config.DojoConfig) {
 	// Add the strings from DojoConfig to be redacted
 	sensStr[0] = conf.Install.DB.Root

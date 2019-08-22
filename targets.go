@@ -10,7 +10,9 @@ import (
 	"strings"
 )
 
+// InstallTargets holds the distro and versions supported for Dojo installations
 var InstallTargets = map[string][]string{
+
 	"ubuntu": {"18.04", "18.10", "19.04"},
 	"debian": {"stretch", "buster"},
 }
@@ -200,16 +202,22 @@ func parseEtcIss(f string) (string, string, string) {
 	// Open the file for parsing
 	file, err := os.Open(f)
 	if err != nil {
-		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was:", f, err))
+		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was: %v", f, err))
 		os.Exit(1)
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			traceMsg(fmt.Sprintf("Erro closing file\nError was: %v", err))
+			os.Exit(1)
+		}
+	}()
 
 	// Read the file in, pull off the first line and split it
 	reader := bufio.NewReader(file)
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		errorMsg(fmt.Sprintf("Unable to read file: %+v\nError was:", f, err))
+		errorMsg(fmt.Sprintf("Unable to read file: %+v\nError was: %v", f, err))
 		os.Exit(1)
 	}
 	fields := strings.Split(line, " ")
@@ -233,16 +241,22 @@ func parseEtcDeb(f string) (string, string, string) {
 	// Open the file for parsing
 	file, err := os.Open(f)
 	if err != nil {
-		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was:", f, err))
+		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was: %v", f, err))
 		os.Exit(1)
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			errorMsg(fmt.Sprintf("Unable to close file\nError was: %v", err))
+			os.Exit(1)
+		}
+	}()
 
 	// Read the file in, pull off the first line
 	reader := bufio.NewReader(file)
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		errorMsg(fmt.Sprintf("Unable to read file: %+v\nError was:", f, err))
+		errorMsg(fmt.Sprintf("Unable to read file: %+v\nError was: %v", f, err))
 		os.Exit(1)
 	}
 	// TODO: Test this with a Debian docker
@@ -258,10 +272,16 @@ func parseFile(f string, sep string, flds map[string]string) map[string]string {
 	// Open the file for parsing
 	file, err := os.Open(f)
 	if err != nil {
-		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was:", f, err))
+		errorMsg(fmt.Sprintf("Unable to open file: %+v\nError was: %v", f, err))
 		os.Exit(1)
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			errorMsg(fmt.Sprintf("Unable to close file\nError was: %v", err))
+			os.Exit(1)
+		}
+	}()
 
 	// Read the file one line at a time till done
 	reader := bufio.NewReader(file)
@@ -339,8 +359,7 @@ func checkPythonVersion() bool {
 	// TODO: Consider checking the minor version of Python3 as well - probably not needed (yet)
 	if strings.HasPrefix(pyVer, "3.") {
 		return true
-	} else {
-		// DefectDojo requires Python 3.x
-		return false
 	}
+	// DefectDojo requires Python 3.x
+	return false
 }

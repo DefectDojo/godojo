@@ -121,7 +121,7 @@ func traceMsg(s string) {
 	}
 }
 
-// getDojo retrives the supplied version of DefectDojo from the Git repo
+// getDojoRelease retrives the supplied version of DefectDojo from the Git repo
 // and places it in the specified dojoSource directory (default is /opt/dojo)
 func getDojoRelease(i *config.InstallConfig) error {
 	statusMsg(fmt.Sprintf("Downloading the configured release of DefectDojo => version %+v", i.Version))
@@ -158,12 +158,21 @@ func getDojoRelease(i *config.InstallConfig) error {
 	// Download requested release from Dojo's Github repo
 	traceMsg(fmt.Sprintf("Downloading release from %+v", dwnURL))
 	resp, err := ddClient.Get(dwnURL)
+	if resp != nil {
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				traceMsg(fmt.Sprintf("Error closing response.\nError was: %v", err))
+				os.Exit(1)
+			}
+		}()
+	}
 	if err != nil {
 		traceMsg(fmt.Sprintf("Error downloading from %+v", dwnURL))
 		traceMsg(fmt.Sprintf("Error downloading was: %+v", err))
 		return err
 	}
-	defer resp.Body.Close()
+
 	// TODO: Check for 200 status before moving on
 	traceMsg(fmt.Sprintf("Status of http.Client response was %+v", resp.Status))
 
@@ -455,7 +464,7 @@ func main() {
 	Spin := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Bootstrapping..."
 	Spin.Start()
-	for i, _ := range bs.cmds {
+	for i := range bs.cmds {
 		//for i := 0; i < len(bs.cmds); i++ {
 		sendCmd(cmdFile,
 			bs.cmds[i],
