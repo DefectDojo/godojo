@@ -50,6 +50,9 @@ const (
 	HelpURL    = "https://github.com/mtesauro/godojo"
 	ReleaseURL = "https://github.com/DefectDojo/django-DefectDojo/archive/"
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
+	YarnGPG    = "https://dl.yarnpkg.com/debian/pubkey.gpg"
+	YarnRepo   = "deb https://dl.yarnpkg.com/debian/ stable main"
+	NodeURL    = "https://deb.nodesource.com/setup_6.x"
 )
 
 // Setup logging with type appended to the log lines - this logs all types to a single file
@@ -309,6 +312,7 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	if err != nil {
 		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
 	}
+	fmt.Println("Running ", cmd)
 
 	// Run and gather its output
 	cmdOut, err := runCmd.CombinedOutput()
@@ -458,14 +462,13 @@ func main() {
 
 	// Bootstrap installer
 	sectionMsg("Bootstrapping the godojo installer")
-	bs := bootstrap{}
+	bs := osCmds{}
 	initBootstrap(target.id, &bs)
 
 	Spin := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Bootstrapping..."
 	Spin.Start()
 	for i := range bs.cmds {
-		//for i := 0; i < len(bs.cmds); i++ {
 		sendCmd(cmdFile,
 			bs.cmds[i],
 			bs.errmsg[i],
@@ -516,6 +519,21 @@ func main() {
 	}
 
 	// OS Installs
+	sectionMsg("Installing OS packages needed for DefectDojo")
+	osInst := osCmds{}
+	initOSInst(target.id, &osInst)
+
+	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	Spin.Prefix = "Installing OS packages..."
+	Spin.Start()
+	for i := range osInst.cmds {
+		sendCmd(cmdFile,
+			osInst.cmds[i],
+			osInst.errmsg[i],
+			osInst.hard[i])
+	}
+	Spin.Stop()
+	statusMsg("Installing OS packages complete")
 
 	// DB (if needed)
 

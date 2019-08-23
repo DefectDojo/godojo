@@ -25,9 +25,9 @@ type targetOS struct {
 	release string
 }
 
-type bootstrap struct {
+type osCmds struct {
 	id     string   // Holds distro + release e.g. ubuntu:18.04
-	cmds   []string // Holds the bootstrap commands
+	cmds   []string // Holds the os commands
 	errmsg []string // Holds the error messages if the matching command fails
 	hard   []bool   // Flag to know if an error on the matching command is fatal
 }
@@ -307,15 +307,14 @@ func parseFile(f string, sep string, flds map[string]string) map[string]string {
 	return vals
 }
 
-func initBootstrap(id string, b *bootstrap) {
+func initBootstrap(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
 		b.id = "ubuntu:18.04"
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
-			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates",
-			//"DEBIAN_FRONTEND=noninteractive apt -y install curl python3 python3-virtualenv expect wget gnupg2",
+			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates curl gnupg sudo",
 		}
 		b.errmsg = []string{
 			"Unable to update apt database",
@@ -362,4 +361,38 @@ func checkPythonVersion() bool {
 	}
 	// DefectDojo requires Python 3.x
 	return false
+}
+
+func initOSInst(id string, b *osCmds) {
+	switch id {
+	case "ubuntu:18.04":
+		b.id = "ubuntu:18.04"
+		b.cmds = []string{
+			"DEBIAN_FRONTEND=noninteractive apt-get update",
+			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
+			fmt.Sprintf("curl -sS %s | apt-key add - >/dev/null 2>&1", YarnGPG),
+			fmt.Sprintf("echo -n %s > /etc/apt/sources.list.d/yarn.list", YarnRepo),
+			fmt.Sprintf("curl -sL %s | sudo -E bash", NodeURL),
+			"apt install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip nodejs yarn build-essential",
+		}
+		b.errmsg = []string{
+			"Unable to update apt database",
+			"Unable to upgrade OS packages with apt",
+			"Unable to obtain the gpg key for Yarn",
+			"Unable to add yard repo as an apt source",
+			"Unable to install node",
+			"Installing OS packages with apt failed",
+		}
+		b.hard = []bool{
+			true,
+			true,
+			true,
+			true,
+			true,
+			true,
+		}
+
+		return
+
+	}
 }
