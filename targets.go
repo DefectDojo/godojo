@@ -64,7 +64,7 @@ func determineLinux(tOS *targetOS) {
 	_, err := os.Stat("/etc/os-release")
 	if err == nil {
 		// That file exists
-		traceMsg("Determing Linux distro from /etc/os-release")
+		traceMsg("Determining Linux distro from /etc/os-release")
 		tOS.distro, tOS.release, tOS.id = parseOSRelease("/etc/os-release")
 		return
 	}
@@ -73,7 +73,7 @@ func determineLinux(tOS *targetOS) {
 	lsbCmd, err := exec.LookPath("lsb_release")
 	if err == nil {
 		// The command was found
-		traceMsg("Determing Linux distro from lsb_release command")
+		traceMsg("Determining Linux distro from lsb_release command")
 		tOS.distro, tOS.release, tOS.id = parseLsbCmd(lsbCmd)
 		return
 	}
@@ -82,7 +82,7 @@ func determineLinux(tOS *targetOS) {
 	_, err = os.Stat("/etc/lsb-release")
 	if err == nil {
 		// The file was found
-		traceMsg("Determing Linux distro from /etc/lsb-release")
+		traceMsg("Determining Linux distro from /etc/lsb-release")
 		tOS.distro, tOS.release, tOS.id = parseEtcLsb("/etc/lsb-release")
 		return
 	}
@@ -91,7 +91,7 @@ func determineLinux(tOS *targetOS) {
 	_, err = os.Stat("/etc/issue")
 	if err == nil {
 		// The file was found
-		traceMsg("Determing Linux distro from /etc/issue")
+		traceMsg("Determining Linux distro from /etc/issue")
 		tOS.distro, tOS.release, tOS.id = parseEtcIss("/etc/issue")
 		return
 	}
@@ -100,7 +100,7 @@ func determineLinux(tOS *targetOS) {
 	_, err = os.Stat("/etc/debian_version")
 	if err == nil {
 		// The file was found
-		traceMsg("Determing Linux distro from /etc/debian_version")
+		traceMsg("Determining Linux distro from /etc/debian_version")
 		tOS.distro, tOS.release, tOS.id = parseEtcDeb("/etc/debian_version")
 		return
 	}

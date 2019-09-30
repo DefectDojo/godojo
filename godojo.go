@@ -224,7 +224,7 @@ func getDojoRelease(i *config.InstallConfig) error {
 	return nil
 }
 
-// Use go-git to checkout latest source - either from a specfic commit or HEAD on a branch
+// Use go-git to checkout latest source - either from a specific commit or HEAD on a branch
 // and places it in the specified dojoSource directory (default is /opt/dojo)
 func getDojoSource(i *config.InstallConfig) error {
 	statusMsg("Downloading DefectDojo source as a branch or commit from the repo directly")
@@ -248,14 +248,14 @@ func getDojoSource(i *config.InstallConfig) error {
 	// Check out a specific branch or commit - but only one of those
 	// In the case that both commit and branch are set to non-empty strings,
 	// the configured commit will win (aka only the commit alone will be done)
-	traceMsg("Determing if a commit or branch will be checked out of the repo")
+	traceMsg("Determining if a commit or branch will be checked out of the repo")
 	if len(i.SourceCommit) > 0 {
 		// Commit is set, so it will be used and branch ignored
 		statusMsg(fmt.Sprintf("Dojo will be installed from commit %+v", i.SourceCommit))
 		s.Start()
 
 		// Do the initial clone of DefectDojo from Github
-		traceMsg(fmt.Sprintf("Intial clone of %+v", CloneURL))
+		traceMsg(fmt.Sprintf("Initial clone of %+v", CloneURL))
 		repo, err := git.PlainClone(srcPath, false, &git.CloneOptions{URL: CloneURL})
 		if err != nil {
 			traceMsg(fmt.Sprintf("Error cloning the DefectDojo repo was: %+v", err))
@@ -264,7 +264,8 @@ func getDojoSource(i *config.InstallConfig) error {
 
 		// Setup the working tree for checking out a particular commit
 		traceMsg("Setting up the working tree to checkout the commit")
-		wk, err := repo.Worktree()
+		wk, _ := repo.Worktree()
+		// TODO: consider checking the err above that is removed with _
 		err = wk.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(i.SourceCommit)})
 		if err != nil {
 			fmt.Printf("Error checking out was %+v\n", err)
@@ -283,7 +284,7 @@ func getDojoSource(i *config.InstallConfig) error {
 		statusMsg(fmt.Sprintf("DefectDojo will be installed from %+v branch", i.SourceBranch))
 		s.Start()
 
-		// Check out a specfic branch
+		// Check out a specific branch
 		// Note: Branch and tag references are a bit odd, see https://github.com/src-d/go-git/blob/master/_examples/branch/main.go#L33
 		//       However, the installer appends the necessary string to the 'normal' branch name
 		traceMsg(fmt.Sprintf("Checking out branch %+v", i.SourceBranch))
@@ -416,7 +417,7 @@ func main() {
 		fmt.Println("Log files are required for the install, exiting install")
 		os.Exit(1)
 	}
-	// Log everthing to the specificied log file location
+	// Log everything to the specificied log file location
 	logSetup(logFile)
 
 	// Logging is setup, start using statusMsg and errorMsg functions for output
@@ -488,7 +489,7 @@ func main() {
 	sectionMsg("Downloading the source for DefectDojo")
 
 	// Determine if a release or Dojo source will be installed
-	traceMsg(fmt.Sprintf("Determing if this is a source or release install: SourceInstall is %+v", conf.Install.SourceInstall))
+	traceMsg(fmt.Sprintf("Determining if this is a source or release install: SourceInstall is %+v", conf.Install.SourceInstall))
 	if conf.Install.SourceInstall {
 		// Checkout the Dojo source directly from Github
 		traceMsg("Dojo will be installed from source")
@@ -536,6 +537,17 @@ func main() {
 	statusMsg("Installing OS packages complete")
 
 	// DB (if needed)
+	if !conf.Install.DB.Local && !conf.Install.DB.Exists {
+		// Remote database that doesn't exist - godojo can't help you here
+		errorMsg("Remote database which doens't exist confgiured - unsupported option")
+		statusMsg("Correct configuration or install remote DB before continuing")
+		fmt.Printf("Exiting...\n\n")
+		os.Exit(1)
+	} else if !conf.Install.DB.Exists {
+		fmt.Println("Need to install the DB")
+	}
+
+	// OS (user, virtualenv, chownership)
 
 	// Django/Python installs
 
