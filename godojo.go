@@ -377,9 +377,7 @@ func main() {
 		fmt.Println("  ERROR: This program must be run as root or with sudo\n  Please correct and run installer again")
 		fmt.Println("##############################################################################")
 		fmt.Println("")
-		fmt.Println("DEBUG => [NOT] Exiting install")
-		// TODO: Remove DEBUG below and above
-		// DEBUG os.Exit(1)
+		os.Exit(1)
 	}
 
 	// Setup logging for the installer
@@ -519,11 +517,12 @@ func main() {
 		sectionMsg("Prompt set to false, non-interactive installation")
 	}
 
-	// OS Installs
+	// Gather OS commands to bootstrap the install
 	sectionMsg("Installing OS packages needed for DefectDojo")
 	osInst := osCmds{}
 	initOSInst(target.id, &osInst)
 
+	// Install the OS packages
 	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Installing OS packages..."
 	Spin.Start()
@@ -536,7 +535,7 @@ func main() {
 	Spin.Stop()
 	statusMsg("Installing OS packages complete")
 
-	// DB (if needed)
+	// InstallDB (if needed)
 	if !conf.Install.DB.Local && !conf.Install.DB.Exists {
 		// Remote database that doesn't exist - godojo can't help you here
 		errorMsg("Remote database which doens't exist confgiured - unsupported option")
@@ -544,8 +543,30 @@ func main() {
 		fmt.Printf("Exiting...\n\n")
 		os.Exit(1)
 	} else if !conf.Install.DB.Exists {
-		fmt.Println("Need to install the DB")
+		// Handle the case that the DB is local and doesn't exist
+		sectionMsg("Installing database needed for DefectDojo")
+
+		// Gather OS commands to install the DB
+		dbInst := osCmds{}
+		dbConf := &conf.Install.DB
+		installDB(target.id, dbConf, &dbInst)
+
+		// Run the commands to install the chosen DB
+		Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+		Spin.Prefix = "Installing " + conf.Install.DB.Engine + " database for DefectDojo..."
+		Spin.Start()
+		for i := range dbInst.cmds {
+			sendCmd(cmdFile,
+				dbInst.cmds[i],
+				dbInst.errmsg[i],
+				dbInst.hard[i])
+		}
+		Spin.Stop()
+		statusMsg("Installing Database complete")
+
 	}
+
+	// Configure DB for Dojo install now that DB exists
 
 	// OS (user, virtualenv, chownership)
 

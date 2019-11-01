@@ -2,9 +2,9 @@
 
 Install:
   Version: "1.5.3.1"
-  SourceInstall: false
+  SourceInstall: true
   SourceBranch: "dev"
-  SourceCommit:  #"17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
+  SourceCommit: bc39a2345af1860431633d91615f2c51de1b6cf2 #"17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
   Quiet: false
   Trace: true
   Redact: true
