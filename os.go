@@ -42,3 +42,16 @@ func instPostgreSQL(id string, b *osCmds) {
 	}
 	return
 }
+
+func defaultDBCreds(db string, os string) map[string]string {
+	// Setup a map to return
+	creds := map[string]string{"user": "foo", "pass": "bar"}
+
+	// Get the default creds based on OS
+	switch os {
+	case "ubuntu:18.04":
+		ubuntuDefaultDBCreds(db, creds)
+	}
+
+	return creds
+}

@@ -107,7 +107,7 @@ func Redactatron(l string, on bool) string {
 // InitRedact - sets up the data to be redacted by Redactatron
 func InitRedact(conf *config.DojoConfig) {
 	// Add the strings from DojoConfig to be redacted
-	sensStr[0] = conf.Install.DB.Root
+	sensStr[0] = conf.Install.DB.Rpass
 	sensStr[1] = conf.Install.DB.Pass
 	sensStr[2] = conf.Install.OS.Pass
 	sensStr[3] = conf.Install.Admin.Pass

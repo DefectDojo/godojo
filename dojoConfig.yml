@@ -17,12 +17,14 @@ Install:
   Static: "static"
   App: "dojo"
   Sampledata: false
+  PullSource: false # DEFAULT true
   # Venv: install.root
   DB:
-    Engine: "MySQL"
+    Engine: "MySQL" # Supported values: SQLite, MySQL, PostgreSQL, MariaDB - CASE sEnSiTiVE!
     Local: true
     Exists: false
-    Root: "vee0Thoanae1daePooz0ieka"
+    Ruser: "root" # The root aka super user for the database - this and Rpass below REQUIRED for remote and existing DBs
+    Rpass: "vee0Thoanae1daePooz0ieka" # DB root user is used create Dojo DB configuration for either (1) remote DBs or (2) existing local DBs
     Name: "dojodb"
     User: "dojodbusr"
     Pass: "vee0Thoanae1daePooz0ieka"

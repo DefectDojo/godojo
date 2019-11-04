@@ -313,7 +313,8 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	if err != nil {
 		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
 	}
-	fmt.Println("Running ", cmd)
+	// TODO: Remove DEBUG below
+	fmt.Println("\nRunning ", cmd)
 
 	// Run and gather its output
 	cmdOut, err := runCmd.CombinedOutput()
@@ -467,12 +468,13 @@ func main() {
 	Spin := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Bootstrapping..."
 	Spin.Start()
-	for i := range bs.cmds {
-		sendCmd(cmdFile,
-			bs.cmds[i],
-			bs.errmsg[i],
-			bs.hard[i])
-	}
+	// TODO REMOVE COMMENTS BELOW
+	//for i := range bs.cmds {
+	//	sendCmd(cmdFile,
+	//		bs.cmds[i],
+	//		bs.errmsg[i],
+	//		bs.hard[i])
+	//}
 	Spin.Stop()
 	statusMsg("Boostraping godojo installer complete")
 
@@ -488,25 +490,30 @@ func main() {
 
 	// Determine if a release or Dojo source will be installed
 	traceMsg(fmt.Sprintf("Determining if this is a source or release install: SourceInstall is %+v", conf.Install.SourceInstall))
-	if conf.Install.SourceInstall {
-		// Checkout the Dojo source directly from Github
-		traceMsg("Dojo will be installed from source")
+	if conf.Install.PullSource {
+		// TODO: Move this to a separate funtion
+		if conf.Install.SourceInstall {
+			// Checkout the Dojo source directly from Github
+			traceMsg("Dojo will be installed from source")
 
-		err = getDojoSource(&conf.Install)
-		if err != nil {
-			errorMsg(fmt.Sprintf("Error attempting to install Dojo source was:\n    %+v", err))
-			os.Exit(1)
+			err = getDojoSource(&conf.Install)
+			if err != nil {
+				errorMsg(fmt.Sprintf("Error attempting to install Dojo source was:\n    %+v", err))
+				os.Exit(1)
+			}
+		} else {
+			// Download Dojo source as a Github release tarball
+			traceMsg("Dojo will be installed from a release tarball")
+
+			err = getDojoRelease(&conf.Install)
+			if err != nil {
+				errorMsg(fmt.Sprintf("Error attempting to install Dojo from a release tarball was:\n    %+v", err))
+				os.Exit(1)
+			}
 		}
 	} else {
-		// Download Dojo source as a Github release tarball
-		traceMsg("Dojo will be installed from a release tarball")
-
-		err = getDojoRelease(&conf.Install)
-		if err != nil {
-			errorMsg(fmt.Sprintf("Error attempting to install Dojo from a release tarball was:\n    %+v", err))
-			os.Exit(1)
-		}
-
+		statusMsg("No source for DefectDojo downloaded per configuration")
+		traceMsg("Source NOT downloaded sa PullSource is false")
 	}
 
 	// Stup for prompting for install-time items
@@ -526,12 +533,13 @@ func main() {
 	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Installing OS packages..."
 	Spin.Start()
-	for i := range osInst.cmds {
-		sendCmd(cmdFile,
-			osInst.cmds[i],
-			osInst.errmsg[i],
-			osInst.hard[i])
-	}
+	// TODO REMOVE COMMENTS BELOW
+	//for i := range osInst.cmds {
+	//	sendCmd(cmdFile,
+	//		osInst.cmds[i],
+	//		osInst.errmsg[i],
+	//		osInst.hard[i])
+	//}
 	Spin.Stop()
 	statusMsg("Installing OS packages complete")
 
@@ -566,7 +574,40 @@ func main() {
 
 	}
 
-	// Configure DB for Dojo install now that DB exists
+	// Start the database if local and didn't already exist
+	dbConf := &conf.Install.DB
+	if conf.Install.DB.Local && !conf.Install.DB.Exists {
+		// Handle the case that the DB is local and doesn't exist
+		sectionMsg("Starting the database needed for DefectDojo")
+
+		// Gather OS commands to install the DB
+		dbStart := osCmds{}
+		startDB(target.id, dbConf, &dbStart)
+
+		// Run the commands to install the chosen DB
+		Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+		Spin.Prefix = "Starting " + conf.Install.DB.Engine + " database for DefectDojo..."
+		Spin.Start()
+		for i := range dbStart.cmds {
+			sendCmd(cmdFile,
+				dbStart.cmds[i],
+				dbStart.errmsg[i],
+				dbStart.hard[i])
+		}
+		Spin.Stop()
+		statusMsg("Installing Database complete")
+	}
+
+	// Preapare the database for DefectDojo by:
+	// (1) Checking connectivity to the DB, (2) checking that the configured Dojo database name doesn't exit already
+	// (3) Droping the existing database if Drop = true is configured (4) Create the DefectDojo database
+	// (5) Add the DB user for DefectDojo to use
+	sectionMsg("Preparing the database needed for DefectDojo")
+	err = dbPrep(target.id, dbConf)
+	if err != nil {
+		errorMsg(fmt.Sprintf("%+v", err))
+		os.Exit(1)
+	}
 
 	// OS (user, virtualenv, chownership)
 
