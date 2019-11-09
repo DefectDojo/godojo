@@ -132,12 +132,12 @@ type SessionSt struct {
 // CookieSt - struct for DD_SESSION_COOKIE_HTTPONLY
 type CookieSt struct {
 	HTTPOnly bool
+	Secure   bool
 }
 
 // CSRFSt - struct for DD_CSFR_COOKIE_HTTPONLY and DD_CSRF_COOKIE_SECURE
 type CSRFSt struct {
 	Cookie CookieSt // Reuse struct above for DD_SESSION_COOKIE_HTTPONLY
-	Secure bool
 }
 
 // SecureSt - struct for DD_SECURE_SSL_REDIRECT, DD_SECURE_HSTS_INCLUDE_SUBDOMAINS, DD_SECURE_HSTS_SECONDS

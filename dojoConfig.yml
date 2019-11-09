@@ -1,23 +1,23 @@
 # Default config for godojo installations
 
 Install:
-  Version: "1.5.3.1"
-  SourceInstall: true
-  SourceBranch: "dev"
-  SourceCommit: bc39a2345af1860431633d91615f2c51de1b6cf2 #"17235b0428ed92fd808aa2eecdfe5137e07cf82d" # "18e11bdbce3dff7a1740d16d877fda539c60ee7b"
-  Quiet: false
-  Trace: true
-  Redact: true
-  Prompt: false
-  Set: "Single Server"
-  Root: "/opt/dojo"
+  Version: "1.5.3.1" # Release version of DefectDojo from https://github.com/DefectDojo/django-DefectDojo/releases
+  SourceInstall: true # If true, a souce code install will be installed overriding the version above ^
+  SourceBranch: "dev" # The branch to be checked out if SourceInstall is true - HEAD will be checked out
+  SourceCommit: bc39a2345af1860431633d91615f2c51de1b6cf2 # If there is a value here, the specific commit will be used over the branch ^
+  Quiet: false # Suppress normal output - only errors will be shown
+  Trace: true # Turn on the most verbose logging option
+  Redact: true # Redact sensitive information from the logs
+  Prompt: false # Prompt for configuration values - NOT IMPLEMENTED YET
+  Set: "Single Server" # Pre-defined configuration options - NOT IMPLEMENTED YET
+  Root: "/opt/dojo" # Note: No traiing /
   Source: "django-DefectDojo"
   Files: "local"
   Media: "media"
   Static: "static"
   App: "dojo"
   Sampledata: false
-  PullSource: false # DEFAULT true
+  PullSource: true # DEFAULT true
   # Venv: install.root
   DB:
     Engine: "MySQL" # Supported values: SQLite, MySQL, PostgreSQL, MariaDB - CASE sEnSiTiVE!
@@ -46,7 +46,7 @@ Install:
     Email: "admin@localhost"
 
 Settings:
-  Debug: false
+  Debug: true # false
   Login:
     Redirect:
       Url: "/"
@@ -59,10 +59,10 @@ Settings:
   CSRF:
     Cookie:
       HTTPOnly: true
-    Secure: false
+      Secure: false
   Secure:
     SSL:
-      Redirect: true
+      Redirect: false
     HSTS:
       Include:
         Subdomains: false
@@ -79,7 +79,7 @@ Settings:
   Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf"
   Team:
     Name: "Security Team"
-  Admins: "DefectDojo:dojo@localhost,Admin:admin@localhost" # How is this different from the install admin user above?
+  Admins: "DefectDojo:dojo@localhost,Admin:admin@localhost"
   Port:
     Scan:
       Contact:
@@ -90,7 +90,7 @@ Settings:
       External:
         Unit:
           Email:
-            List: "email@localhost"
+            List: "['email@localhost']" # List of email addresses like ['email@ex.com'] or ['email@ex.com', 'another@ex.com']
       Source:
         IP: "127.0.0.1"
   Whitenoise: false
@@ -153,7 +153,7 @@ Settings:
     Key: "." # If unchanged, a random value will be generated at install time
   Credential:
     AES:
-      256:
+      B256:
         Key: "." # If unchanged, a random value will be generated at install time
   Data:
     Upload:
@@ -173,7 +173,7 @@ Settings:
           API:
             URL: ""
   Allowed:
-    Hosts: "'localhost','127.0.0.1'"
+    Hosts: "localhost,127.0.0.1" # List of IP addresses or host names like ['192.168.1.42'] or ['dojo.ex.com', 'vuln.ex.com']
   Email:
       URL: "smtp://user@:password@localhost:25"
 

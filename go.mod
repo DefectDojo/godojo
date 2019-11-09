@@ -5,8 +5,10 @@ go 1.12
 require (
 	github.com/briandowns/spinner v1.6.1
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/google/pprof v0.0.0-20191028172815-5e965273ee43 // indirect
 	github.com/lib/pq v1.2.0
 	github.com/spf13/viper v1.4.0
+	golang.org/x/arch v0.0.0-20191101135251-a0d8588395bd // indirect
 	golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools/gopls v0.1.3 // indirect

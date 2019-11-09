@@ -469,12 +469,12 @@ func main() {
 	Spin.Prefix = "Bootstrapping..."
 	Spin.Start()
 	// TODO REMOVE COMMENTS BELOW
-	//for i := range bs.cmds {
-	//	sendCmd(cmdFile,
-	//		bs.cmds[i],
-	//		bs.errmsg[i],
-	//		bs.hard[i])
-	//}
+	for i := range bs.cmds {
+		sendCmd(cmdFile,
+			bs.cmds[i],
+			bs.errmsg[i],
+			bs.hard[i])
+	}
 	Spin.Stop()
 	statusMsg("Boostraping godojo installer complete")
 
@@ -520,6 +520,7 @@ func main() {
 	if conf.Install.Prompt {
 		sectionMsg("Prompt set to true, interactive installation beginning")
 		fmt.Println("TODO: Write prompting code")
+		os.Exit(1)
 	} else {
 		sectionMsg("Prompt set to false, non-interactive installation")
 	}
@@ -534,12 +535,12 @@ func main() {
 	Spin.Prefix = "Installing OS packages..."
 	Spin.Start()
 	// TODO REMOVE COMMENTS BELOW
-	//for i := range osInst.cmds {
-	//	sendCmd(cmdFile,
-	//		osInst.cmds[i],
-	//		osInst.errmsg[i],
-	//		osInst.hard[i])
-	//}
+	for i := range osInst.cmds {
+		sendCmd(cmdFile,
+			osInst.cmds[i],
+			osInst.errmsg[i],
+			osInst.hard[i])
+	}
 	Spin.Stop()
 	statusMsg("Installing OS packages complete")
 
@@ -609,13 +610,60 @@ func main() {
 		os.Exit(1)
 	}
 
-	// OS (user, virtualenv, chownership)
+	// Prep OS (user, virtualenv, chownership)
+	sectionMsg("Preparing the OS for DefectDojo installation")
+	prepCmds := osCmds{}
+	osPrep(target.id, &conf.Install, &prepCmds)
+	// Run the OS Prep commands
+	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	Spin.Prefix = "Preparing the OS for DefectDojo..."
+	Spin.Start()
+	for i := range prepCmds.cmds {
+		sendCmd(cmdFile,
+			prepCmds.cmds[i],
+			prepCmds.errmsg[i],
+			prepCmds.hard[i])
+	}
+	Spin.Stop()
+	statusMsg("Preparing the OS complete")
+
+	// Create settings.py for DefectDojo
+	sectionMsg("Creating settings.py for DefectDojo")
+	settCmds := osCmds{}
+	createSettingsPy(target.id, &conf, &settCmds)
+	// Run the commands to create settings.py
+	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	Spin.Prefix = "Creating settings.py for DefectDojo..."
+	Spin.Start()
+	for i := range settCmds.cmds {
+		sendCmd(cmdFile,
+			settCmds.cmds[i],
+			settCmds.errmsg[i],
+			settCmds.hard[i])
+	}
+	Spin.Stop()
+	statusMsg("Creating settings.py for DefectDojo complete")
 
 	// Django/Python installs
+	sectionMsg("Setting up Django for DefectDojo")
+	setupDj := osCmds{}
+	setupDjango(target.id, &conf, &setupDj)
+	// Run the Django commands
+	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+	Spin.Prefix = "Setting up Django for DefectDojo..."
+	Spin.Start()
+	for i := range setupDj.cmds {
+		sendCmd(cmdFile,
+			setupDj.cmds[i],
+			setupDj.errmsg[i],
+			setupDj.hard[i])
+	}
+	Spin.Stop()
+	statusMsg("Setting up Django complete")
 
 	// Static items
 
-	// Celery / RabitMQ
+	// Celery / TODO: RabitMQ
 
 	// Optional Installs
 

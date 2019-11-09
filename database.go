@@ -162,7 +162,6 @@ func prepMySQL(dbTar *config.DBTarget, os string) error {
 	}
 
 	// User the connction string above to open a DB connection
-	fmt.Println(conn)
 	dbMySQL, err := sql.Open("mysql", conn)
 	if err != nil {
 		traceMsg("Unable to run sql.Open against MySQL, connection string was:")

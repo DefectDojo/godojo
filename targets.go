@@ -315,7 +315,7 @@ func initBootstrap(id string, b *osCmds) {
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
-			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates curl gnupg sudo",
+			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates curl gnupg git",
 		}
 		b.errmsg = []string{
 			"Unable to update apt database",
@@ -363,4 +363,3 @@ func checkPythonVersion() bool {
 	// DefectDojo requires Python 3.x
 	return false
 }
-
