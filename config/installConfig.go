@@ -17,7 +17,7 @@ type InstallConfig struct {
 	Trace         bool           // If true, log at the trace level
 	Redact        bool           // If true, redact sensitive information from being logged.  Defaults to true
 	Prompt        bool           // Prompt at run time for install config.  If true, user will be prompted
-	Set           string         // The install set or type: Single Server, Dev, Stand-alone
+	Mac           bool           // The install set or type: Single Server, Dev, Stand-alone
 	Root          string         // Install root defaults to /opt/dojo
 	Source        string         // Directory to put the Dojo souce, child directory of Root
 	Files         string         // Directory for locally generated files like uploads, static, media, etc

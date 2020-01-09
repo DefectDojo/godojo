@@ -9,7 +9,7 @@ Install:
   Trace: true # Turn on the most verbose logging option
   Redact: true # Redact sensitive information from the logs
   Prompt: false # Prompt for configuration values - NOT IMPLEMENTED YET
-  Set: "Single Server" # Pre-defined configuration options - NOT IMPLEMENTED YET
+  Mac: false # Pre-defined configuration options - NOT IMPLEMENTED YET
   Root: "/opt/dojo" # Note: No traiing /
   Source: "django-DefectDojo"
   Files: "local"
