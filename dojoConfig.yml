@@ -4,7 +4,7 @@ Install:
   Version: "1.5.3.1" # Release version of DefectDojo from https://github.com/DefectDojo/django-DefectDojo/releases
   SourceInstall: true # If true, a souce code install will be installed overriding the version above ^
   SourceBranch: "dev" # The branch to be checked out if SourceInstall is true - HEAD will be checked out
-  SourceCommit: bc39a2345af1860431633d91615f2c51de1b6cf2 # If there is a value here, the specific commit will be used over the branch ^
+  SourceCommit:  22294ab6c69468057bce79386768869b2788de5d # If there is a value here, the specific commit will be used over the branch ^
   Quiet: false # Suppress normal output - only errors will be shown
   Trace: true # Turn on the most verbose logging option
   Redact: true # Redact sensitive information from the logs

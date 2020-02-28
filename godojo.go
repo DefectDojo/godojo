@@ -26,7 +26,7 @@ import (
 // Global vars
 var (
 	// Installer version
-	version = "0.1.0"
+	version = "0.1.1"
 	// Global config struct
 	conf    config.DojoConfig
 	sensStr [12]string // Hold sensitive strings to redact
