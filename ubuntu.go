@@ -18,6 +18,7 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 			fmt.Sprintf("curl -sS %s | apt-key add -", YarnGPG),
 			fmt.Sprintf("echo -n %s > /etc/apt/sources.list.d/yarn.list", YarnRepo),
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
+			"DEBIAN_FRONTEND=noninteractive apt-get install sudo",
 			"curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - ",
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip python3-virtualenv yarn build-essential expect",
 		}
@@ -25,10 +26,12 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 			"Unable to obtain the gpg key for Yarn",
 			"Unable to add yard repo as an apt source",
 			"Unable to update apt database",
+			"Unable to install sudo",
 			"Unable to install nodejs 12.x",
 			"Installing OS packages with apt failed",
 		}
 		b.hard = []bool{
+			true,
 			true,
 			true,
 			true,

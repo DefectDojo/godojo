@@ -47,6 +47,7 @@ var (
 // Global Constants
 const (
 	// URLs needed by the installer
+	// TODO: Move most of these into dojoConfig.yml
 	HelpURL    = "https://github.com/mtesauro/godojo"
 	ReleaseURL = "https://github.com/DefectDojo/django-DefectDojo/archive/"
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
@@ -72,6 +73,7 @@ func dojoBanner() {
 	fmt.Println("     / /_/ /  __/ __/  __/ /__/ /_   / /_/ / /_/ / / / /_/ / ")
 	fmt.Println("    /_____/\\___/_/  \\___/\\___/\\__/  /_____/\\____/_/ /\\____/  ")
 	fmt.Println("                                               /___/         ")
+	fmt.Println("    version ", version)
 	fmt.Println("")
 	fmt.Println("  Welcome to goDojo, the official way to install DefectDojo.")
 	fmt.Println("  For more information on how goDojo does an install, see:")
@@ -332,30 +334,11 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 }
 
 func main() {
-	// Setup viper config
-	viper.AddConfigPath(".")
-	viper.SetConfigName("dojoConfig")
+	// Read dojoConfig.yml file
+	readConfigFile()
 
-	// Setup ENV variables
-	viper.SetEnvPrefix("DD")
-	replace := strings.NewReplacer(".", "_")
-	viper.SetEnvKeyReplacer(replace)
-	viper.AutomaticEnv()
-
-	// Read the default config file dojoConfig.yml
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Println("")
-		fmt.Println("Unable to read the godojo config file (dojoConfig.yml), exiting install")
-		os.Exit(1)
-	}
-	// Marshall the config values into the DojoConfig struct
-	err = viper.Unmarshal(&conf)
-	if err != nil {
-		fmt.Println("")
-		fmt.Println("Unable to set the config values based on config file and ENV variables, exiting install")
-		os.Exit(1)
-	}
+	// TODO: Command line Cobra options for
+	// - "show vars" to print supported envivonmental variables
 
 	// Setup output and logging levels and print the DefectDojo banner if needed
 	Quiet = conf.Install.Quiet
@@ -632,6 +615,7 @@ func main() {
 	settCmds := osCmds{}
 	createSettingsPy(target.id, &conf, &settCmds)
 	// Run the commands to create settings.py
+	// TODO: Write values to .env.prod file
 	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Creating settings.py for DefectDojo..."
 	Spin.Start()
