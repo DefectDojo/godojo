@@ -1,8 +1,8 @@
 # Default config for godojo installations
 
 Install:
-  Version: "1.5.3.1" # Release version of DefectDojo from https://github.com/DefectDojo/django-DefectDojo/releases
-  SourceInstall: true # If true, a souce code install will be installed overriding the version above ^
+  Version: "1.5.4.1" # Release version of DefectDojo from https://github.com/DefectDojo/django-DefectDojo/releases
+  SourceInstall: false # If true, a souce code install will be installed overriding the version above ^
   SourceBranch: "dev" # The branch to be checked out if SourceInstall is true - HEAD will be checked out
   SourceCommit:  22294ab6c69468057bce79386768869b2788de5d # If there is a value here, the specific commit will be used over the branch ^
   Quiet: false # Suppress normal output - only errors will be shown
@@ -46,134 +46,232 @@ Install:
     Email: "admin@localhost"
 
 Settings:
-  Debug: true # false
-  Login:
-    Redirect:
-      Url: "/"
-  Django:
-    Admin:
-      Enabled: false
-  Session:
-    Cookie:
-      HTTPOnly: true
-  CSRF:
-    Cookie:
-      HTTPOnly: true
-      Secure: false
-  Secure:
-    SSL:
-      Redirect: false
-    HSTS:
-      Include:
-        Subdomains: false
-      Seconds: 31536000 # aka 1 year in seconds
-    Browser:
-        XSS:
-          Filter: false
-    Proxy:
-      SSL:
-        Header: false
-  Time:
-    Zone: "UTC"
-  Lang: "en-us"
-  Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf"
-  Team:
-    Name: "Security Team"
+  # Start Deprecated - remove me
+  # These are handled above under Install.Admin
+  AdminFirstName: "Admin"
+  AdminLastName: "Admin"
+  AdminMail: "admin@localhost"
   Admins: "DefectDojo:dojo@localhost,Admin:admin@localhost"
-  Port:
-    Scan:
-      Contact:
-        Email: "email@localhost"
-      Result:
-          Email:
-            From: "email@localhost"
-      External:
-        Unit:
-          Email:
-            List: "['email@localhost']" # List of email addresses like ['email@ex.com'] or ['email@ex.com', 'another@ex.com']
-      Source:
-        IP: "127.0.0.1"
-  Whitenoise: false
-  Track:
-    Migrations: false
-  Test:
-    Runner: "django.test.runner.DiscoverRunner"
-    Database:
-      Name: "test_defectdojo"
-  URL:
-    Prefix: ""
+  AdminUser: "Admin"
+  # End Deprecated - remove me
+  AllowedHosts: "*"
+  CeleryBeatScheduleFilename: "" # Calculated using DD_INSTALL_FILES + doj.celery.beat.db
+  CeleryBrokerHost: ""
+  CeleryBrokerPassword: ""
+  CeleryBrokerPath: "/dojo.celerydb.sqlite"
+  CeleryBrokerPort: -1
+  CeleryBrokerScheme: "sqla_sqlite"
+  CeleryBrokerURL: ""
+  CeleryBrokerUser: ""
+  CeleryLogLevel: ""
+  CeleryResultBackend: "django-db"
+  CeleryResultExpires: 86400
+  CeleryTaskIgnoreResult: true
+  CeleryTaskSerializer: "pickle"
+  CredentialAES256Key: "" # If empty, a random value will be generated at install time
+  CSRFCookieHTTPOnly: true
+  CSRFCookieSecure: false
+  DatabaseEngine: "" # Calcuated based on install time config
+  DatabaseHost: "" # Calcuated based on install time config
+  DatabaseName: "" # Calcuated based on install time config
+  DatabasePassword: "" # Calcuated based on install time config
+  DatabasePort: "" # Calcuated based on install time config
+  DatabaseType: "" # Calcuated based on install time config - maybe deprecate this
+  DatabaseURL: "" # Calcuated based on install time config
+  DatabaseUser: ""
+  DataUploadMaxMemorySize: 8388608 # aka 8 mb
+  Debug: true
+  DjangoAdminEnabled: false
+  EmailURL: "smtp://user@:password@localhost:25"
+  Env: ""
+  EnvPath: ""
+  ForceLowercaseTags: true
+  Host: ""
+  Initialize: ""
+  Lang: "en-us"
+  LanguageCode: "en-us"
+  LoginRedirectURL: "/"
+  MaxTagLength: 25
+  MediaRoot: "" # Calculated based on install time config
+  MediaURL: "/media/"
+  Port: ""
+  PortScanContactEmail: "email@localhost"
+  PortScanExternalUnitEmailList: "['email@localhost']" # List of email addresses like ['email@ex.com'] or ['email@ex.com', 'another@ex.com']
+  PortScanResultEmailFrom: "email@localhost"
+  PortScanSourceIP: "127.0.0.1"
   Root: "" # Calculated based on install time config
-  Language:
-    Code: "en-us"
-  Site:
-    ID: 1
-  Use:
-    I18N: true
-    L10N: true
-    TZ: true
-  Media:
-    Root: "" # Calcuated based on install time config
-    URL: "/media/"
-  Static:
-    Root: "" # Calcuated based on install time config
-    URL: "/static/"
-  Celery:
-    Broker:
-      URL: ""
-      Scheme: "sqla_sqlite"
-      User: ""
-      Password: ""
-      Host: ""
-      Port: -1
-      Path: "/dojo.celerydb.sqlite"
-    Task:
-      Ignore:
-        Result: true
-      Serializer: "pickle"
-    Result:
-      Backend: "django-db"
-      Expires: 86400
-    Beat:
-      Schedule:
-        Filename: "" # Calculated using DD_INSTALL_FILES + doj.celery.beat.db
-  Force:
-    Lowercase:
-      Tags: true
-  Max:
-    Tag:
-      Length: 25
-  Database:
-    Engine: "" # Calcuated based on install time config
-    Host: "" # Calcuated based on install time config
-    Name: "" # Calcuated based on install time config
-    Password: "" # Calcuated based on install time config
-    Port: "" # Calcuated based on install time config
-    User: "" # Calcuated based on install time config
-  Secret:
-    Key: "." # If unchanged, a random value will be generated at install time
-  Credential:
-    AES:
-      B256:
-        Key: "." # If unchanged, a random value will be generated at install time
-  Data:
-    Upload:
-      Max:
-        Memory:
-          Size: 8388608 # aka 8 mb
-  Social:
-    Auth:
-      Google:
-        OAUTH2:
-          Key: ""
-          Secret: ""
-      Okta:
-        OAUTH2:
-          Key: ""
-          Secret: ""
-          API:
-            URL: ""
-  Allowed:
-    Hosts: "localhost,127.0.0.1" # List of IP addresses or host names like ['192.168.1.42'] or ['dojo.ex.com', 'vuln.ex.com']
-  Email:
-      URL: "smtp://user@:password@localhost:25"
+  SecretKey: "" # If empty, a random value will be generated at install time
+  SecureBrowserXSSFilter: false
+  SecureContentTypeNosniff: ""
+  SecureHSTSIncludeSubdomains: false
+  SecureHSTSSeconds: 31536000 # aka 1 year in seconds
+  SecureProxySSLHeader: false
+  SecureSSLRedirect: false
+  SessionCookieHTTPOnly: true
+  SessionCookieSecure: false
+  SiteID: 1
+  SocialAuthAzureadTenantOauth2Enabled: ""
+  SocialAuthAzureadTenantOauth2Key: ""
+  SocialAuthAzureadTenantOauth2Resource: ""
+  SocialAuthAzureadTenantOauth2Secret: ""
+  SocialAuthAzureadTenantOauth2TenantID: ""
+  SocialAuthGoogleOauth2Enable: ""
+  SocialAuthGoogleOauth2Key: ""
+  SocialAuthGoogleOauth2Secret: ""
+  SocialAuthOktaOauth2APIURL: ""
+  SocialAuthOktaOauth2Enabled: ""
+  SocialAuthOktaOauth2Key: ""
+  SocialAuthOktaOauth2Secret: ""
+  StaticRoot: "" # Calculated based on install time config
+  StaticURL: "/static/"
+  TeamName: "Security Team"
+  TestDatabaseName: "test_defectdojo"
+  TestRunner: "django.test.runner.DiscoverRunner"
+  TimeZone: "UTC"
+  TrackMigrations: false
+  UrlPrefix: ""
+  UseI18n: true
+  UseL10n: true
+  UseTZ: true
+  UUID: ""
+  UwsgiEndpoint: ""
+  UwsgiHost: ""
+  UwsgiMode: ""
+  UwsgiPass: ""
+  UwsgiPort: ""
+  Whitenoise: false
+  Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf" # Deprecated - remove me
+  DojoAdminUser: ""
+
+# Old-style config options
+#  Debug: true # false
+#  Login:
+#    Redirect:
+#      Url: "/"
+#  Django:
+#    Admin:
+#      Enabled: false
+#  Session:
+#    Cookie:
+#      HTTPOnly: true
+#  CSRF:
+#    Cookie:
+#      HTTPOnly: true
+#      Secure: false
+#  Secure:
+#    SSL:
+#      Redirect: false
+#    HSTS:
+#      Include:
+#        Subdomains: false
+#      Seconds: 31536000 # aka 1 year in seconds
+#    Browser:
+#        XSS:
+#          Filter: false
+#    Proxy:
+#      SSL:
+#        Header: false
+#  Time:
+#    Zone: "UTC"
+#  Lang: "en-us"
+#  Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf"
+#  Team:
+#    Name: "Security Team"
+#  Admins: "DefectDojo:dojo@localhost,Admin:admin@localhost"
+#  Port:
+#    Scan:
+#      Contact:
+#        Email: "email@localhost"
+#      Result:
+#          Email:
+#            From: "email@localhost"
+#      External:
+#        Unit:
+#          Email:
+#            List: "['email@localhost']" # List of email addresses like ['email@ex.com'] or ['email@ex.com', 'another@ex.com']
+#      Source:
+#        IP: "127.0.0.1"
+#  Whitenoise: false
+#  Track:
+#    Migrations: false
+#  Test:
+#    Runner: "django.test.runner.DiscoverRunner"
+#    Database:
+#      Name: "test_defectdojo"
+#  URL:
+#    Prefix: ""
+#  Root: "" # Calculated based on install time config
+#  Language:
+#    Code: "en-us"
+#  Site:
+#    ID: 1
+#  Use:
+#    I18N: true
+#    L10N: true
+#    TZ: true
+#  Media:
+#    Root: "" # Calcuated based on install time config
+#    URL: "/media/"
+#  Static:
+#    Root: "" # Calcuated based on install time config
+#    URL: "/static/"
+#  Celery:
+#    Broker:
+#      URL: ""
+#      Scheme: "sqla_sqlite"
+#      User: ""
+#      Password: ""
+#      Host: ""
+#      Port: -1
+#      Path: "/dojo.celerydb.sqlite"
+#    Task:
+#      Ignore:
+#        Result: true
+#      Serializer: "pickle"
+#    Result:
+#      Backend: "django-db"
+#      Expires: 86400
+#    Beat:
+#      Schedule:
+#        Filename: "" # Calculated using DD_INSTALL_FILES + doj.celery.beat.db
+#  Force:
+#    Lowercase:
+#      Tags: true
+#  Max:
+#    Tag:
+#      Length: 25
+#  Database:
+#    Engine: "" # Calcuated based on install time config
+#    Host: "" # Calcuated based on install time config
+#    Name: "" # Calcuated based on install time config
+#    Password: "" # Calcuated based on install time config
+#    Port: "" # Calcuated based on install time config
+#    User: "" # Calcuated based on install time config
+#  Secret:
+#    Key: "." # If unchanged, a random value will be generated at install time
+#  Credential:
+#    AES:
+#      B256:
+#        Key: "." # If unchanged, a random value will be generated at install time
+#  Data:
+#    Upload:
+#      Max:
+#        Memory:
+#          Size: 8388608 # aka 8 mb
+#  Social:
+#    Auth:
+#      Google:
+#        OAUTH2:
+#          Key: ""
+#          Secret: ""
+#      Okta:
+#        OAUTH2:
+#          Key: ""
+#          Secret: ""
+#          API:
+#            URL: ""
+#  Allowed:
+#    Hosts: "localhost,127.0.0.1" # List of IP addresses or host names like ['192.168.1.42'] or ['dojo.ex.com', 'vuln.ex.com']
+#  Email:
+#      URL: "smtp://user@:password@localhost:25"
 

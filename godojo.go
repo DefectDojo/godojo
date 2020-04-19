@@ -337,6 +337,11 @@ func main() {
 	// Read dojoConfig.yml file
 	readConfigFile()
 
+	// Read in any environmental variables
+	readEnvVars()
+	fmt.Println("Debug concluded")
+	os.Exit(0)
+
 	// TODO: Command line Cobra options for
 	// - "show vars" to print supported envivonmental variables
 
