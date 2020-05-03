@@ -147,10 +147,10 @@ Settings:
   Wkhtmltopdf: "/usr/local/bin/wkhtmltopdf" # DD_WKHTMLTOPDF - DEPRECATED
 
 Optional:
-	HelpURL: "https://github.com/mtesauro/godojo" # DD_
-	ReleaseURL: "https://github.com/DefectDojo/django-DefectDojo/archive/" # DD_
-    CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" # DD_
-	YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" # DD_
-	YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" # DD_
-    NodeURL: "https://deb.nodesource.com/setup_12.x" # DD_
+  HelpURL: "https://github.com/mtesauro/godojo" # DD_
+  ReleaseURL: "https://github.com/DefectDojo/django-DefectDojo/archive/" # DD_
+  CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" # DD_
+  YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" # DD_
+  YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" # DD_
+  NodeURL: "https://deb.nodesource.com/setup_12.x" # DD_
 
