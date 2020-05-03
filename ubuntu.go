@@ -19,7 +19,7 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 			fmt.Sprintf("echo -n %s > /etc/apt/sources.list.d/yarn.list", YarnRepo),
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get install sudo",
-			"curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - ",
+			fmt.Sprintf("curl -sL %s | bash - ", NodeURL),
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip python3-virtualenv yarn build-essential expect",
 		}
 		b.errmsg = []string{

@@ -53,7 +53,7 @@ const (
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
 	YarnGPG    = "https://dl.yarnpkg.com/debian/pubkey.gpg"
 	YarnRepo   = "deb https://dl.yarnpkg.com/debian/ stable main"
-	NodeURL    = "https://deb.nodesource.com/setup_6.x"
+	NodeURL    = "https://deb.nodesource.com/setup_12.x"
 )
 
 // Setup logging with type appended to the log lines - this logs all types to a single file
