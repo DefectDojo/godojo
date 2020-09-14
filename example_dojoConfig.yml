@@ -28,8 +28,7 @@ Install:
   Static: "static" # DD_Static - Directory in DD_Files for static asset files (JS, images, etc)
   App: "dojo" # DD_App - Directory in DD_Source where the DefectDojo Django app is located
   Sampledata: false # DD_Sampledata - Boolean for installing sample data during the install
-  PullSource: true # DD_PullSource - Boolean for installer to download source for DefectDojo Note: Usually for debugging the installer itself
-  DB:
+  PullSource: true # DD_PullSource - Boolean for installer to download source for DefectDojo Note: Usually for debugging the installer itself DB:
     Engine: "MySQL" # DD_DB_Engine - Database engine to use (SQLite, MySQL, PostgreSQL, MariaDB) Note: CASE sEnSiTiVE!
     Local: true # DD_DB_Local - Boolean for when DB is on the same host/server/vm (local)
     Exists: false # DD_DB_Exists - Boolean for when DB for DefectDojo already exists so no install needed

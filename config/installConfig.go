@@ -71,6 +71,7 @@ type SettingsConfig struct {
 	AdminFirstName                        string `yaml:"AdminFirstName"`
 	AdminLastName                         string `yaml:"AdminLastName"`
 	AdminMail                             string `yaml:"AdminMail"`
+	AdminPassword                         string `yaml:"AdminPassword"`
 	Admins                                string `yaml:"Admins"`
 	AdminUser                             string `yaml:"AdminUser"`
 	AllowedHosts                          string `yaml:"AllowedHosts"`

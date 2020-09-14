@@ -114,7 +114,7 @@ type envVals struct {
 
 func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 	// Generate randon values for the two keys below
-	secretKey := i.Settings.Secret.Key
+	secretKey := i.Settings.SecretKey
 	if secretKey == "." {
 		// Handle the case that the key wasn't configured
 		s1 := make([]byte, 42)
@@ -125,7 +125,7 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 		}
 		secretKey = base64.StdEncoding.EncodeToString(s1)
 	}
-	credentialKey := i.Settings.Credential.AES.B256.Key
+	credentialKey := i.Settings.CredentialAES256Key
 	if credentialKey == "." {
 		// Handle the case that the key wasn't configured
 		s2 := make([]byte, 42)
@@ -140,27 +140,27 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 	// Set the values from the configuration file
 	env := envVals{
 		DD_DEBUG:                              i.Settings.Debug,
-		DD_DJANGO_ADMIN_ENABLED:               i.Settings.Django.Admin.Enabled,
+		DD_DJANGO_ADMIN_ENABLED:               i.Settings.DjangoAdminEnabled,
 		DD_SECRET_KEY:                         secretKey,
 		DD_CREDENTIAL_AES_256_KEY:             credentialKey,
 		DD_DATABASE_URL:                       dbURL,
-		DD_ALLOWED_HOSTS:                      i.Settings.Allowed.Hosts,
+		DD_ALLOWED_HOSTS:                      i.Settings.AllowedHosts,
 		DD_WHITENOISE:                         i.Settings.Whitenoise,
-		DD_TIME_ZONE:                          i.Settings.Time.Zone,
-		DD_TRACK_MIGRATIONS:                   i.Settings.Track.Migrations,
-		DD_SESSION_COOKIE_HTTPONLY:            i.Settings.Session.Cookie.HTTPOnly,
-		DD_CSRF_COOKIE_HTTPONLY:               i.Settings.CSRF.Cookie.HTTPOnly,
-		DD_SECURE_SSL_REDIRECT:                i.Settings.Secure.SSL.Redirect,
-		DD_CSRF_COOKIE_SECURE:                 i.Settings.CSRF.Cookie.Secure,
-		DD_SECURE_BROWSER_XSS_FILTER:          i.Settings.Secure.Browser.XSS.Filter,
+		DD_TIME_ZONE:                          i.Settings.TimeZone,
+		DD_TRACK_MIGRATIONS:                   i.Settings.TrackMigrations,
+		DD_SESSION_COOKIE_HTTPONLY:            i.Settings.SessionCookieHTTPOnly,
+		DD_CSRF_COOKIE_HTTPONLY:               i.Settings.CSRFCookieHTTPOnly,
+		DD_SECURE_SSL_REDIRECT:                i.Settings.SecureSSLRedirect,
+		DD_CSRF_COOKIE_SECURE:                 i.Settings.CSRFCookieSecure,
+		DD_SECURE_BROWSER_XSS_FILTER:          i.Settings.SecureBrowserXSSFilter,
 		DD_LANG:                               i.Settings.Lang,
 		DD_WKHTMLTOPDF:                        i.Settings.Wkhtmltopdf,
-		DD_TEAM_NAME:                          i.Settings.Team.Name,
+		DD_TEAM_NAME:                          i.Settings.TeamName,
 		DD_ADMINS:                             i.Settings.Admins,
-		DD_PORT_SCAN_CONTACT_EMAIL:            i.Settings.Port.Scan.Contact.Email,
-		DD_PORT_SCAN_RESULT_EMAIL_FROM:        i.Settings.Port.Scan.Result.Email.From,
-		DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST: i.Settings.Port.Scan.External.Unit.Email.List,
-		DD_PORT_SCAN_SOURCE_IP:                i.Settings.Port.Scan.Source.IP,
+		DD_PORT_SCAN_CONTACT_EMAIL:            i.Settings.PortScanContactEmail,
+		DD_PORT_SCAN_RESULT_EMAIL_FROM:        i.Settings.PortScanResultEmailFrom,
+		DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST: i.Settings.PortScanExternalUnitEmailList,
+		DD_PORT_SCAN_SOURCE_IP:                i.Settings.PortScanSourceIP,
 	}
 
 	// Create a template based on the text above

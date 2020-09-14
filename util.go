@@ -111,12 +111,12 @@ func InitRedact(conf *config.DojoConfig) {
 	sensStr[1] = conf.Install.DB.Pass
 	sensStr[2] = conf.Install.OS.Pass
 	sensStr[3] = conf.Install.Admin.Pass
-	sensStr[4] = conf.Settings.Celery.Broker.Password
-	sensStr[5] = conf.Settings.Database.Password
-	sensStr[6] = conf.Settings.Secret.Key
-	sensStr[7] = conf.Settings.Credential.AES.B256.Key
-	sensStr[8] = conf.Settings.Social.Auth.Google.OAUTH2.Key
-	sensStr[9] = conf.Settings.Social.Auth.Google.OAUTH2.Secret
-	sensStr[10] = conf.Settings.Social.Auth.Okta.OAUTH2.Key
-	sensStr[11] = conf.Settings.Social.Auth.Okta.OAUTH2.Secret
+	sensStr[4] = conf.Settings.CeleryBrokerPassword
+	sensStr[5] = conf.Settings.DatabasePassword
+	sensStr[6] = conf.Settings.SecretKey
+	sensStr[7] = conf.Settings.CredentialAES256Key
+	sensStr[8] = conf.Settings.SocialAuthGoogleOauth2Key
+	sensStr[9] = conf.Settings.SocialAuthGoogleOauth2Secret
+	sensStr[10] = conf.Settings.SocialAuthOktaOauth2Key
+	sensStr[11] = conf.Settings.SocialAuthOktaOauth2Secret
 }

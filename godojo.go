@@ -339,6 +339,7 @@ func main() {
 
 	// Read in any environmental variables
 	readEnvVars()
+	fmt.Printf("")
 	fmt.Println("Debug concluded")
 	os.Exit(0)
 
