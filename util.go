@@ -120,3 +120,25 @@ func InitRedact(conf *config.DojoConfig) {
 	sensStr[10] = conf.Settings.SocialAuthOktaOauth2Key
 	sensStr[11] = conf.Settings.SocialAuthOktaOauth2Secret
 }
+
+// Deemb -
+func Deemb() {
+	// Testing embedding files
+	f := make([]string, 1)
+	f[0] = "dojoConfig.yml"
+
+	for _, fi := range f {
+		fmt.Printf("File is %s\n", fi)
+		data, err := Asset("embd/" + fi)
+		if err != nil {
+			// Asset was not found.
+			fmt.Println("DOH!")
+		}
+		fmt.Printf("Data length is %v\n", len(data))
+		//err = ioutil.WriteFile("./output/test.rpm", data, 0644)
+		//if err != nil {
+		//	// Asset was not found.
+		//	fmt.Println("DOH! number 2")
+		//}
+	}
+}

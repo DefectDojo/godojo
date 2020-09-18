@@ -115,7 +115,7 @@ type envVals struct {
 func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 	// Generate randon values for the two keys below
 	secretKey := i.Settings.SecretKey
-	if secretKey == "." {
+	if len(secretKey) < 28 {
 		// Handle the case that the key wasn't configured
 		s1 := make([]byte, 42)
 		_, err := rand.Read(s1)
@@ -126,7 +126,7 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 		secretKey = base64.StdEncoding.EncodeToString(s1)
 	}
 	credentialKey := i.Settings.CredentialAES256Key
-	if credentialKey == "." {
+	if len(credentialKey) < 28 {
 		// Handle the case that the key wasn't configured
 		s2 := make([]byte, 42)
 		_, err := rand.Read(s2)
@@ -136,6 +136,8 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 		}
 		credentialKey = base64.StdEncoding.EncodeToString(s2)
 	}
+
+	fmt.Printf("secretKey is %v\n", secretKey)
 
 	// Set the values from the configuration file
 	env := envVals{

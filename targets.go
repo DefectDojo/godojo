@@ -308,6 +308,7 @@ func parseFile(f string, sep string, flds map[string]string) map[string]string {
 	return vals
 }
 
+// TODO: Make this fail for unsupported OSes
 func initBootstrap(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":

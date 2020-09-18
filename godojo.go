@@ -339,10 +339,9 @@ func main() {
 
 	// Read in any environmental variables
 	readEnvVars()
-	fmt.Printf("")
-	fmt.Println("Debug concluded")
-	os.Exit(0)
 
+	//Deemb()
+	//os.Exit(0)
 	// TODO: Command line Cobra options for
 	// - "show vars" to print supported envivonmental variables
 
@@ -446,6 +445,7 @@ func main() {
 	target := targetOS{}
 	determineOS(&target)
 
+	// TODO: Need to write a function that takes target and validates it's supporeted by godojo
 	statusMsg(fmt.Sprintf("OS was determined to be %+v, %+v", strings.Title(target.os), strings.Title(target.id)))
 	statusMsg("DefectDojo installation on this OS is supported, continuing")
 
