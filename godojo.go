@@ -1,7 +1,6 @@
 package main
 
-// TODO:
-// Add Cobra for command-line args - https://github.com/spf13/cobra
+// TODO: Consider Cobra for command-line args - https://github.com/spf13/cobra
 import (
 	"fmt"
 	"io"
@@ -26,7 +25,9 @@ import (
 // Global vars
 var (
 	// Installer version
-	version = "0.1.1"
+	ver = "1.0.1"
+	// Configuration file name
+	cf = "dojoConfig.yml"
 	// Global config struct
 	conf    config.DojoConfig
 	sensStr [12]string // Hold sensitive strings to redact
@@ -47,7 +48,7 @@ var (
 // Global Constants
 const (
 	// URLs needed by the installer
-	// TODO: Move most of these into dojoConfig.yml
+	// TODO: Move most of these into dojoConfig.yml optinal section
 	HelpURL    = "https://github.com/mtesauro/godojo"
 	ReleaseURL = "https://github.com/DefectDojo/django-DefectDojo/archive/"
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
@@ -73,7 +74,7 @@ func dojoBanner() {
 	fmt.Println("     / /_/ /  __/ __/  __/ /__/ /_   / /_/ / /_/ / / / /_/ / ")
 	fmt.Println("    /_____/\\___/_/  \\___/\\___/\\__/  /_____/\\____/_/ /\\____/  ")
 	fmt.Println("                                               /___/         ")
-	fmt.Println("    version ", version)
+	fmt.Println("    version ", ver)
 	fmt.Println("")
 	fmt.Println("  Welcome to goDojo, the official way to install DefectDojo.")
 	fmt.Println("  For more information on how goDojo does an install, see:")
@@ -334,16 +335,29 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 }
 
 func main() {
-	// Read dojoConfig.yml file
-	readConfigFile()
+	// Read command-line args, if any
+	arg := readArgs()
+
+	// Handle default and dev installs
+	if arg.Default || arg.Dev {
+		// Set config options based on embedded default config
+		defaultConfig()
+		if arg.Dev {
+			// TODO: Write this bit
+			setDevDefaults()
+		}
+	} else {
+		// Read dojoConfig.yml file
+		readConfigFile()
+	}
 
 	// Read in any environmental variables
 	readEnvVars()
 
 	//Deemb()
-	//os.Exit(0)
-	// TODO: Command line Cobra options for
-	// - "show vars" to print supported envivonmental variables
+	fmt.Printf("the value of arg is %v\n", arg)
+	os.Exit(0)
+	// TODO Consider a "show vars" command-line option to print supported envivonmental variables
 
 	// Setup output and logging levels and print the DefectDojo banner if needed
 	Quiet = conf.Install.Quiet
@@ -658,5 +672,5 @@ func main() {
 	// Optional Installs
 
 	// Look at setup.bash's high-level workflow
-	statusMsg(fmt.Sprintf("\n\nSuccessfully reached the end of main in godojo version %+v", version))
+	statusMsg(fmt.Sprintf("\n\nSuccessfully reached the end of main in godojo version %+v", ver))
 }

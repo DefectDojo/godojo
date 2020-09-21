@@ -9,6 +9,46 @@ import (
 	"github.com/spf13/viper"
 )
 
+func defaultConfig() {
+	fmt.Println("Inside of defaultConfig")
+	// Temporarily write out the config file into current working directory
+	createDefaultConfig(cf, false)
+
+	// Read the config file
+	readConfigFile()
+
+	// Clean-up the temporary config file
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Unable to determine current working directory, exiting...")
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+	err = os.Remove(path + "/" + cf)
+	if err != nil {
+		// TODO Change me to error log
+		fmt.Println("Unable to delete temporary config file")
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println("File will remain for user to manually remove")
+	}
+}
+
+func setDevDefaults() {
+	// TODO: Complete this option
+	fmt.Println("")
+	fmt.Println("Currently, this is not a supported option.")
+	fmt.Println("Instead, please run ./godojo without any command-line options")
+	fmt.Println("to create a default config file in the current working directory")
+	fmt.Println("and edit that file as needed")
+	fmt.Println("")
+	fmt.Println("Alternatively, godojo can be run with \"-default\" to do an install")
+	fmt.Println("using the default config options.")
+	fmt.Println("")
+	fmt.Println("Ask Matt nicely and he may knock this out for you. ;-)")
+	fmt.Println("")
+	os.Exit(1)
+}
+
 // readConfigFile reads the yaml configuration file for godojo
 // to determine runtime configuration.  The file is dojoConfig.yml
 // and is expected to be in the same directory as the godojo binary
@@ -20,13 +60,6 @@ func readConfigFile() {
 	viper.SetConfigName("dojoConfig")
 	viper.SetConfigType("yml")
 
-	// Setup ENV variables
-	// TODO: Do these manually in readEnvVars() since they have odd names for Viper auto-magic
-	//viper.SetEnvPrefix("DD")
-	//replace := strings.NewReplacer(".", "_")
-	//viper.SetEnvKeyReplacer(replace)
-	//viper.AutomaticEnv()
-
 	// Read the default config file dojoConfig.yml
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -35,6 +68,7 @@ func readConfigFile() {
 		fmt.Printf("Error was: %v\n", err)
 		os.Exit(1)
 	}
+
 	// Marshall the config values into the DojoConfig struct
 	err = viper.Unmarshal(&conf)
 	if err != nil {
