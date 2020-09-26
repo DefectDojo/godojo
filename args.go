@@ -109,7 +109,7 @@ func createDefaultConfig(c string, ex bool) {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-	data, err := Asset("embd/" + c)
+	data, err := Asset(emdir + c)
 	if err != nil {
 		// Asset was not found.
 		fmt.Println("Default dojoConfig.yml was not found")

@@ -31,6 +31,9 @@ var (
 	// Global config struct
 	conf    config.DojoConfig
 	sensStr [12]string // Hold sensitive strings to redact
+	emdir   = "embd/"
+	otdir   = "/opt/.dojo-temp/"
+	modf    = ".dd.mod"
 	// For logging
 	logLocation = "logs"
 	Trace       *log.Logger
@@ -354,16 +357,13 @@ func main() {
 	// Read in any environmental variables
 	readEnvVars()
 
-	//Deemb()
-	fmt.Printf("the value of arg is %v\n", arg)
-	os.Exit(0)
 	// TODO Consider a "show vars" command-line option to print supported envivonmental variables
 
 	// Setup output and logging levels and print the DefectDojo banner if needed
 	Quiet = conf.Install.Quiet
 	TraceOn = conf.Install.Trace
 	Redact = conf.Install.Redact
-	if !Quiet {
+	if !(Quiet || conf.Options.Embd) {
 		dojoBanner()
 	}
 	// Setup strings to be redacted
@@ -382,6 +382,17 @@ func main() {
 		fmt.Println("")
 		os.Exit(1)
 	}
+
+	//TODO: Move the below to after logging is turned on
+	if conf.Options.Embd {
+		err = extr()
+		if err != nil {
+			fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
+			os.Exit(1)
+		}
+	}
+
+	os.Exit(0)
 
 	// Setup logging for the installer
 	n := time.Now()
@@ -443,7 +454,7 @@ func main() {
 	traceMsg(fmt.Sprintf("Successfully created OS Command log file at %+v", cmdPath))
 
 	// Write out the runtime config based on the net of the config file + ENV variables
-	// TODO: Consider moving this closer to the end of main
+	// TODO: Consider moving this closer to the end of main - if it's not getting changed, here is fine...
 	traceMsg("Writing out the runtime install configuration file")
 	err = viper.WriteConfigAs("runtime-install-config.yml")
 	if err != nil {
