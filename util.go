@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -148,39 +149,40 @@ func deemb(f []string, o string) error {
 }
 
 func extr() error {
-	fmt.Printf("Embedded file is %s\n", emdir+"gdj.tar.gz")
-	//d, err := Asset(emdir + "gdj.tar.gz")
-	d, err := Asset("embd/gdj.tar.gz")
+	loc := emdir + tgzf
+	d, err := Asset(loc)
 	if err != nil {
 		// Asset was not found.
-		fmt.Println("No embedded asset found")
+		statusMsg("No embedded asset found")
 		return err
+	}
+	if strings.Compare(conf.Options.Key, "jahtauCaizahXae4doh8oKoo") != 0 {
+		errorMsg("Compare failed")
+		return errors.New("Compare failed")
 	}
 
 	// Create the tempary directory if it doesn't exist already
-	//traceMsg("Creating the godojo temporary directory if it doesn't exist already")
-	fmt.Println("Creating the godojo temporary directory if it doesn't exist already")
+	statusMsg("Creating the godojo temporary directory if it doesn't exist already")
 	_, err = os.Stat(otdir)
 	if err != nil {
 		// Source directory doesn't exist
 		err = os.MkdirAll(otdir, 0755)
 		if err != nil {
-			//traceMsg(fmt.Sprintf("Error creating godojo temporary directory was: %+v", err))
-			fmt.Println(fmt.Sprintf("Error creating godojo temporary directory was: %+v", err))
+			errorMsg(fmt.Sprintf("Error creating godojo temporary directory was: %+v", err))
 			return err
 		}
 	}
 
 	// Write out Asset
-	err = ioutil.WriteFile(otdir+"gdj.tar.gz", d, 0644)
+	err = ioutil.WriteFile(otdir+tgzf, d, 0644)
 	if err != nil {
 		// File can't be written
-		fmt.Println("Asset cannot be written to disk")
+		errorMsg("Asset cannot be written to disk")
 		return err
 	}
 
 	// Extract contents
-	tb, err := os.Open(otdir + "gdj.tar.gz")
+	tb, err := os.Open(otdir + tgzf)
 	if err != nil {
 		traceMsg(fmt.Sprintf("Error opening tarball was: %+v", err))
 		return err
@@ -192,18 +194,15 @@ func extr() error {
 	}
 
 	// Clean up tarball
-	err = os.Remove(otdir + "gdj.tar.gz")
+	err = os.Remove(otdir + tgzf)
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error deleting the tarball was: %+v", err))
+		errorMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
 		return err
 	}
 
-	fmt.Printf("Data length is %v\n", len(d))
 	err = ddmod()
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error handling mod file: %+v", err))
+		errorMsg(fmt.Sprintf("Error handling mod file: %+v", err))
 		return err
 	}
 
@@ -214,28 +213,24 @@ func ddmod() error {
 	// Check for mod
 	_, err := os.Stat(otdir + dmod(modf))
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error efile not found: %+v", err))
+		errorMsg(fmt.Sprintf("Error efile not found: %+v", err))
 	} else {
 		dmf := den(otdir+dmod(modf), conf.Options.Key)
 		err = ioutil.WriteFile(otdir+modf, dmf, 0644)
 		if err != nil {
-			//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-			fmt.Println(fmt.Sprintf("Error writing efile: %+v", err))
+			errorMsg(fmt.Sprintf("Error writing efile: %+v", err))
 			return err
 		}
 	}
 	_, err = os.Stat(otdir + modf)
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error mod file not found: %+v", err))
+		errorMsg(fmt.Sprintf("Error mod file not found: %+v", err))
 		return err
 	}
 
 	err = parseMod()
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error parsing mod file: %+v", err))
+		errorMsg(fmt.Sprintf("Error parsing mod file: %+v", err))
 		return err
 	}
 
@@ -260,46 +255,35 @@ func parseMod() error {
 
 	f, err := os.Open(otdir + modf)
 	if err != nil {
-		//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-		fmt.Println(fmt.Sprintf("Error opening mod file: %+v", err))
+		errorMsg(fmt.Sprintf("Error opening mod file: %+v", err))
 		return err
 	}
 	defer func() {
 		if err = f.Close(); err != nil {
-			//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-			fmt.Println(fmt.Sprintf("Error opening mod file: %+v", err))
+			errorMsg(fmt.Sprintf("Error opening mod file: %+v", err))
 		}
 	}()
 
-	fmt.Println("Scanning...")
+	traceMsg("Scanning mod file...")
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		fmt.Printf("%s\n", s.Text())
 		l := s.Text()
-		a := strings.SplitAfter(l, ":")
-		//fmt.Printf("l = %s\n", l)
-		//fmt.Printf("a[0] = %s\n", a[0])
+		a := strings.SplitN(l, ":", 2)
 		switch a[0] {
-		case "f:":
-			fmt.Println("F-line")
+		case "f":
 			if len(a) > 1 {
-				fmt.Printf("%v\n", a[1])
 				m.f = append(m.f, a[1])
 			}
-		case "c:":
-			fmt.Println("C-line")
+		case "c":
 			if len(a) > 1 {
-				fmt.Printf("%v\n", a[1])
 				m.c = append(m.c, a[1])
 			}
-		case "e:":
-			fmt.Println("E-line")
+		case "e":
 			if len(a) > 1 {
-				fmt.Printf("%v\n", a[1])
 				m.e = append(m.e, a[1])
 			}
 		default:
-			fmt.Println("BAD LINE, skipping")
+			traceMsg("BAD LINE, skipping")
 		}
 	}
 
@@ -315,9 +299,12 @@ func parseMod() error {
 	if err != nil {
 		return err
 	}
+	err = clup()
+	if err != nil {
+		return err
+	}
 
-	fmt.Printf("m is %v\n", m)
-	fmt.Println("End of parseMod")
+	traceMsg("End of parseMod")
 	return nil
 }
 
@@ -325,8 +312,7 @@ func hanf(s []string) error {
 	for _, f := range s {
 		_, err := os.Stat(otdir + f)
 		if err != nil {
-			//traceMsg(fmt.Sprintf("Error deleting the tarball was: %+v", err))
-			fmt.Println(fmt.Sprintf("Error file from mod not found: %+v", err))
+			errorMsg(fmt.Sprintf("Error file from mod not found: %+v", err))
 			return err
 		}
 	}
@@ -340,19 +326,19 @@ func hanc(s []string) error {
 		if err != nil {
 			np = append(np, p)
 		} else {
-			//DEBUG
-			fmt.Println("Command found in path")
+			traceMsg(fmt.Sprintf("Command %s found in path", p))
 		}
 	}
 	if len(np) > 1 {
-		fmt.Println("Commands required for the install were not found.\n" +
-			"Missing command(s):")
+		emsg := "Commands required for the install were not found.\n" +
+			"Missing command(s):"
 		for i, e := range np {
 			if i == 0 {
 				continue
 			}
-			fmt.Printf(" - %s\n", e)
+			emsg += fmt.Sprintf(" %s,", e)
 		}
+		errorMsg(emsg)
 		fmt.Println("Unable to complete installation.  Quitting")
 		os.Exit(1)
 	}
@@ -360,52 +346,32 @@ func hanc(s []string) error {
 }
 
 func hane(s []string) error {
-	es := osCmds{}
 	t := make(map[int]string)
 	for i, c := range s {
 		t[i] = c
 	}
-	fmt.Printf("t is %v\n", t)
-	for _, v := range t {
-		fmt.Printf("v is %+v\n", v)
-		es.cmds = append(es.cmds, v)
-		es.errmsg = append(es.errmsg, fmt.Sprintf("Unable to run command: %v", v))
-		es.hard = append(es.hard, true)
-	}
-	fmt.Printf("es is %+v\n", es)
-	fmt.Println("===========================================")
-
 	//DEBUG - temp log file
 	tempLog, err := os.OpenFile(otdir+"temp-log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		traceMsg(fmt.Sprintf("Error opening temp-log was: %+v", err))
 		return err
 	}
-	fmt.Printf("Log is %+v\n", tempLog)
-	for j := range es.cmds {
+	for j := 0; j < len(t); j++ {
+		traceMsg(fmt.Sprintf("command is %+v\n", t[j]))
 		sendCmd(tempLog,
-			es.cmds[j],
-			es.errmsg[j],
-			es.hard[j])
+			t[j],
+			fmt.Sprintf("Unable to run command: %v", t[j]),
+			true)
 	}
-	fmt.Println("===========================================")
-	fmt.Printf("es is %+v\n", es)
 	return nil
 }
 
-//		b.id = "ubuntu:18.04"
-//		b.cmds = []string{
-//			"DEBIAN_FRONTEND=noninteractive apt-get update",
-//			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
-//			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates curl gnupg git",
-//		}
-//		b.errmsg = []string{
-//			"Unable to update apt database",
-//			"Unable to upgrade OS packages with apt",
-//			"Unable to install prerequisites for installer via apt",
-//		}
-//		b.hard = []bool{
-//			true,
-//			true,
-//			true,
-//		}
+func clup() error {
+	err := os.RemoveAll(otdir)
+	if err != nil {
+		traceMsg("Error removing temp directory")
+		return err
+	}
+
+	return nil
+}

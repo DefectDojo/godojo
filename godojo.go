@@ -25,7 +25,7 @@ import (
 // Global vars
 var (
 	// Installer version
-	ver = "1.0.1"
+	ver = "1.1.0"
 	// Configuration file name
 	cf = "dojoConfig.yml"
 	// Global config struct
@@ -33,7 +33,9 @@ var (
 	sensStr [12]string // Hold sensitive strings to redact
 	emdir   = "embd/"
 	otdir   = "/opt/.dojo-temp/"
+	bdir    = "/opt/"
 	modf    = ".dd.mod"
+	tgzf    = "gdj.tar.gz"
 	// For logging
 	logLocation = "logs"
 	Trace       *log.Logger
@@ -320,7 +322,7 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
 	}
 	// TODO: Remove DEBUG below
-	fmt.Println("\nRunning ", cmd)
+	//fmt.Println("\nRunning ", cmd)
 
 	// Run and gather its output
 	cmdOut, err := runCmd.CombinedOutput()
@@ -384,15 +386,15 @@ func main() {
 	}
 
 	//TODO: Move the below to after logging is turned on
-	if conf.Options.Embd {
-		err = extr()
-		if err != nil {
-			fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
-			os.Exit(1)
-		}
-	}
+	//if conf.Options.Embd {
+	//	err = extr()
+	//	if err != nil {
+	//		fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
+	//		os.Exit(1)
+	//	}
+	//}
 
-	os.Exit(0)
+	//os.Exit(0)
 
 	// Setup logging for the installer
 	n := time.Now()
@@ -460,6 +462,17 @@ func main() {
 	if err != nil {
 		errorMsg(fmt.Sprintf("Error from writing the runtime config was: %+v", err))
 		os.Exit(1)
+	}
+
+	// Check options after logging is turned on
+	if conf.Options.Embd {
+		Quiet = true
+		err = extr()
+		if err != nil {
+			fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
 
 	// Check install OS

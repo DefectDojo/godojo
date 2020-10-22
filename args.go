@@ -63,7 +63,7 @@ func readArgs() LaunchArgs {
 		// No config file found, so create one and exit
 		createDefaultConfig(cf, true)
 	}
-	fmt.Println("Reached the end of readArgs")
+	traceMsg("Reached the end of readArgs")
 	return opts
 }
 
@@ -127,7 +127,7 @@ func createDefaultConfig(c string, ex bool) {
 
 	if ex {
 		fmt.Println("\nNOTE: A dojoConfig.yml file was not found in the current directory:")
-		fmt.Printf("%s\nA default configuration file one was written there.\n\n", path)
+		fmt.Printf("\t%s\nA default configuration file was written there.\n\n", path)
 		fmt.Println("Please review the configuration settings, adjusting as needed and")
 		fmt.Println("re-run the godojo installer to begin the install you configured.")
 		os.Exit(0)
