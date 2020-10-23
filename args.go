@@ -91,7 +91,7 @@ func printHelp() {
 	fmt.Println("")
 	fmt.Println("  Note #1: GNU-style arguments like --name are also supported")
 	fmt.Println("")
-	fmt.Println("  Note #1: Any of the configuration values can be overridden with an environmental variable")
+	fmt.Println("  Note #2: Any of the configuration values can be overridden with an environmental variable")
 	fmt.Println("")
 	fmt.Println("Examples:")
 	fmt.Println("$ ./godojo")
