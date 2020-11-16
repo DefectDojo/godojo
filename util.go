@@ -149,6 +149,7 @@ func deemb(f []string, o string) error {
 }
 
 func extr() error {
+	otdir = conf.Options.Tmpdir
 	loc := emdir + tgzf
 	d, err := Asset(loc)
 	if err != nil {
@@ -213,7 +214,7 @@ func ddmod() error {
 	// Check for mod
 	_, err := os.Stat(otdir + dmod(modf))
 	if err != nil {
-		errorMsg(fmt.Sprintf("Error efile not found: %+v", err))
+		traceMsg(fmt.Sprintf("Possible error - efile not found: %+v", err))
 	} else {
 		dmf := den(otdir+dmod(modf), conf.Options.Key)
 		err = ioutil.WriteFile(otdir+modf, dmf, 0644)

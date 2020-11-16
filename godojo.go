@@ -385,17 +385,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	//TODO: Move the below to after logging is turned on
-	//if conf.Options.Embd {
-	//	err = extr()
-	//	if err != nil {
-	//		fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
-	//		os.Exit(1)
-	//	}
-	//}
-
-	//os.Exit(0)
-
 	// Setup logging for the installer
 	n := time.Now()
 	when := strconv.Itoa(int(n.UnixNano()))
