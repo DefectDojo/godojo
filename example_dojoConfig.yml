@@ -162,4 +162,6 @@ Options:
   NodeURL: "https://deb.nodesource.com/setup_12.x" # DD_
   Embd: false
   Key: ""
+  Tmpdir: "/opt/.dojo-temp/"
+  UsrInst: true
 

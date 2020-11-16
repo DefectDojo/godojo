@@ -157,7 +157,7 @@ func extr() error {
 		statusMsg("No embedded asset found")
 		return err
 	}
-	if strings.Compare(conf.Options.Key, "reijaezoo4rooqu4roNgah2x") != 0 {
+	if strings.Compare(conf.Options.Key, "jahtauCaizahXae4doh8oKoo") != 0 {
 		errorMsg("Compare failed")
 		return errors.New("Compare failed")
 	}
@@ -364,6 +364,12 @@ func hane(s []string) error {
 			fmt.Sprintf("Unable to run command: %v", t[j]),
 			true)
 	}
+	traceMsg("Final change of ownership for /opt/dojo")
+	sendCmd(tempLog,
+		"chown -R "+conf.Install.OS.User+":"+conf.Install.OS.Group+" /opt/dojo",
+		"Unable to set file ownership for /opt/dojo",
+		false)
+
 	return nil
 }
 
