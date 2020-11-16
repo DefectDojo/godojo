@@ -176,4 +176,5 @@ type OptionalConfig struct {
 	Embd       bool   `yaml:"Embd"`
 	Key        string `yaml:"Key"`
 	Tmpdir     string `yaml:Tmpdir`
+	UsrInst    bool   `yaml:UsrInst`
 }
