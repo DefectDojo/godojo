@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -370,31 +371,19 @@ func main() {
 	// Setup strings to be redacted
 	InitRedact(&conf)
 
-	// DEBUG - TEMP FIX
 	// Check that user is root for the installer or run with "sudo godojo"
-	//usr, err := user.Current()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//if usr.Uid != "0" {
-	//	fmt.Println("")
-	//	fmt.Println("##############################################################################")
-	//	fmt.Println("  ERROR: This program must be run as root or with sudo\n  Please correct and run installer again")
-	//	fmt.Println("##############################################################################")
-	//	fmt.Println("")
-	//	os.Exit(1)
-	//}
-
-	//TODO: Move the below to after logging is turned on
-	//if conf.Options.Embd {
-	//	err = extr()
-	//	if err != nil {
-	//		fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
-	//		os.Exit(1)
-	//	}
-	//}
-
-	//os.Exit(0)
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if usr.Uid != "0" && !conf.Options.UsrInst {
+		fmt.Println("")
+		fmt.Println("##############################################################################")
+		fmt.Println("  ERROR: This program must be run as root or with sudo\n  Please correct and run installer again")
+		fmt.Println("##############################################################################")
+		fmt.Println("")
+		os.Exit(1)
+	}
 
 	// Setup logging for the installer
 	n := time.Now()
@@ -402,7 +391,7 @@ func main() {
 	logName := "dojo-install_" + when + ".log"
 	logPath := path.Join(logLocation, logName)
 	// Create the logs directory if it does not exist
-	_, err := os.Stat(logPath)
+	_, err = os.Stat(logPath)
 	if err != nil {
 		// logs directory doesn't exist
 		err = os.MkdirAll(logLocation, 0755)

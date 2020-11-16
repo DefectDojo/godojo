@@ -149,6 +149,7 @@ func deemb(f []string, o string) error {
 }
 
 func extr() error {
+	otdir = conf.Options.Tmpdir
 	loc := emdir + tgzf
 	d, err := Asset(loc)
 	if err != nil {
@@ -156,7 +157,7 @@ func extr() error {
 		statusMsg("No embedded asset found")
 		return err
 	}
-	if strings.Compare(conf.Options.Key, "reijaezoo4rooqu4roNgah2x") != 0 {
+	if strings.Compare(conf.Options.Key, "jahtauCaizahXae4doh8oKoo") != 0 {
 		errorMsg("Compare failed")
 		return errors.New("Compare failed")
 	}
@@ -213,7 +214,7 @@ func ddmod() error {
 	// Check for mod
 	_, err := os.Stat(otdir + dmod(modf))
 	if err != nil {
-		errorMsg(fmt.Sprintf("Error efile not found: %+v", err))
+		traceMsg(fmt.Sprintf("Possible error - efile not found: %+v", err))
 	} else {
 		dmf := den(otdir+dmod(modf), conf.Options.Key)
 		err = ioutil.WriteFile(otdir+modf, dmf, 0644)
@@ -363,6 +364,12 @@ func hane(s []string) error {
 			fmt.Sprintf("Unable to run command: %v", t[j]),
 			true)
 	}
+	traceMsg("Final change of ownership for /opt/dojo")
+	sendCmd(tempLog,
+		"chown -R "+conf.Install.OS.User+":"+conf.Install.OS.Group+" /opt/dojo",
+		"Unable to set file ownership for /opt/dojo",
+		false)
+
 	return nil
 }
 
