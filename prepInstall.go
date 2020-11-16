@@ -371,7 +371,7 @@ func readEnvVars() { // Env variables pulled from repo Add newly supported env v
 					fmt.Printf("Error was: %v\n", err)
 					os.Exit(1)
 				}
-				// TODO: Look up maximum tag lenght in data model and check for that too
+				// TODO: Look up maximum tag length in data model and check for that too
 				conf.Settings.MaxTagLength = leng
 			case "DD_MEDIA_ROOT":
 				conf.Settings.MediaRoot = v

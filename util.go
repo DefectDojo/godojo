@@ -156,7 +156,7 @@ func extr() error {
 		statusMsg("No embedded asset found")
 		return err
 	}
-	if strings.Compare(conf.Options.Key, "jahtauCaizahXae4doh8oKoo") != 0 {
+	if strings.Compare(conf.Options.Key, "reijaezoo4rooqu4roNgah2x") != 0 {
 		errorMsg("Compare failed")
 		return errors.New("Compare failed")
 	}

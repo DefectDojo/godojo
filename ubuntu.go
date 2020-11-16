@@ -128,7 +128,7 @@ func ubuntuDefaultDBCreds(db string, creds map[string]string) {
 }
 
 func ubuntuDefaultMySQL(c map[string]string) {
-	// Sent some intial values that ensure the connection will fail if the file read fails
+	// Sent some initial values that ensure the connection will fail if the file read fails
 	c["user"] = "debian-sys-maint"
 	c["pass"] = "FAIL"
 
