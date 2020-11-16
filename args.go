@@ -7,18 +7,18 @@ import (
 	"os"
 )
 
-type LaunchArgs struct {
+type launchArgs struct {
 	Dev      bool
 	Default  bool
 	Componse bool // TODO: Implement this
 	K8s      bool // TODO: Implement this
 }
 
-func readArgs() LaunchArgs {
+func readArgs() launchArgs {
 	//TODO TUrn me to a log writer fmt.Println("Called readArgs")
 	// Read in the supported command-line options
 	var version, help, v, h bool
-	opts := LaunchArgs{}
+	opts := launchArgs{}
 	flag.BoolVar(&opts.Default, "default", false, "Do an install based on default config values")
 	flag.BoolVar(&opts.Dev, "dev", false, "Do a development install with known config values")
 	flag.BoolVar(&version, "version", false, "Print the version and exit")

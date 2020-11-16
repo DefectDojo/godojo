@@ -228,7 +228,7 @@ func prepMySQL(dbTar *config.DBTarget, os string) error {
 		return err
 	}
 	if rows != 1 {
-		return errors.New("Error occured when creating DefectDojo database")
+		return errors.New("Error occurred when creating DefectDojo database")
 	}
 
 	// Create user for DefectDojo to use to connect to the database

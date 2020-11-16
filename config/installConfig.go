@@ -165,7 +165,7 @@ type SettingsConfig struct {
 	DojoAdminUser                         string `yaml:"DojoAdminUser"`
 } // yaml:"Settings"
 
-// Optional config values added to make developing and testing godojo easier
+// OptionalConfig values added to make developing and testing godojo easier
 // AKA you should never really need to change these.
 type OptionalConfig struct {
 	HelpURL    string `yaml:"HelpURL"`
@@ -175,4 +175,5 @@ type OptionalConfig struct {
 	NodeURL    string `yaml:"NodeURL"`
 	Embd       bool   `yaml:"Embd"`
 	Key        string `yaml:"Key"`
+	Tmpdir     string `yaml:Tmpdir`
 }

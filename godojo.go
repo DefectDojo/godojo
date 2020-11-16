@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -32,7 +31,7 @@ var (
 	conf    config.DojoConfig
 	sensStr [12]string // Hold sensitive strings to redact
 	emdir   = "embd/"
-	otdir   = "/opt/.dojo-temp/"
+	otdir   = "/tmp/.dojo-temp/"
 	bdir    = "/opt/"
 	modf    = ".dd.mod"
 	tgzf    = "gdj.tar.gz"
@@ -371,19 +370,20 @@ func main() {
 	// Setup strings to be redacted
 	InitRedact(&conf)
 
+	// DEBUG - TEMP FIX
 	// Check that user is root for the installer or run with "sudo godojo"
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if usr.Uid != "0" {
-		fmt.Println("")
-		fmt.Println("##############################################################################")
-		fmt.Println("  ERROR: This program must be run as root or with sudo\n  Please correct and run installer again")
-		fmt.Println("##############################################################################")
-		fmt.Println("")
-		os.Exit(1)
-	}
+	//usr, err := user.Current()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//if usr.Uid != "0" {
+	//	fmt.Println("")
+	//	fmt.Println("##############################################################################")
+	//	fmt.Println("  ERROR: This program must be run as root or with sudo\n  Please correct and run installer again")
+	//	fmt.Println("##############################################################################")
+	//	fmt.Println("")
+	//	os.Exit(1)
+	//}
 
 	//TODO: Move the below to after logging is turned on
 	//if conf.Options.Embd {
@@ -402,7 +402,7 @@ func main() {
 	logName := "dojo-install_" + when + ".log"
 	logPath := path.Join(logLocation, logName)
 	// Create the logs directory if it does not exist
-	_, err = os.Stat(logPath)
+	_, err := os.Stat(logPath)
 	if err != nil {
 		// logs directory doesn't exist
 		err = os.MkdirAll(logLocation, 0755)
@@ -518,7 +518,7 @@ func main() {
 	// Determine if a release or Dojo source will be installed
 	traceMsg(fmt.Sprintf("Determining if this is a source or release install: SourceInstall is %+v", conf.Install.SourceInstall))
 	if conf.Install.PullSource {
-		// TODO: Move this to a separate funtion
+		// TODO: Move this to a separate function
 		if conf.Install.SourceInstall {
 			// Checkout the Dojo source directly from Github
 			traceMsg("Dojo will be installed from source")
