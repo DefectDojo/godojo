@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -30,7 +29,7 @@ var (
 	cf = "dojoConfig.yml"
 	// Global config struct
 	conf    config.DojoConfig
-	sensStr [12]string // Hold sensitive strings to redact
+	sensStr []string // Hold sensitive strings to redact
 	emdir   = "embd/"
 	otdir   = "/tmp/.dojo-temp/"
 	bdir    = "/opt/"
@@ -42,6 +41,7 @@ var (
 	Info        *log.Logger
 	Warning     *log.Logger
 	Error       *log.Logger
+	cmdLogger   *os.File
 	// For Global config flags
 	Quiet   bool
 	TraceOn bool
@@ -102,33 +102,31 @@ func sectionMsg(s string) {
 
 // Output a status message and log the same string
 func statusMsg(s string) {
-	// Redact sensitive info in redact is true
-	Redactatron(s, Redact)
-	// Pring status message if quiet isn't set
+	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if !Quiet {
-		fmt.Printf("%s\n", s)
+		fmt.Printf("%s\n", Redactatron(s, Redact))
 	}
-	Info.Println(s)
+	Info.Println(Redactatron(s, Redact))
 }
 
 // Output a blatant error message and log the string as an error
 func errorMsg(s string) {
-	// Pring status message if quiet isn't set
+	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if !Quiet {
 		fmt.Println("")
 		fmt.Println("##############################################################################")
-		fmt.Printf("  ERROR: %s\n", s)
+		fmt.Printf("  ERROR: %s\n", Redactatron(s, Redact))
 		fmt.Println("##############################################################################")
 		fmt.Println("")
 	}
-	Error.Println(s)
+	Error.Println(Redactatron(s, Redact))
 }
 
 // Output a blatant error message and log the string as an error
 func traceMsg(s string) {
-	// Pring status message if quiet isn't set
+	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if TraceOn {
-		Trace.Println(s)
+		Trace.Println(Redactatron(s, Redact))
 	}
 }
 
@@ -314,30 +312,43 @@ func getDojoSource(i *config.InstallConfig) error {
 	return nil
 }
 
-func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
-	// Setup command
-	runCmd := exec.Command("bash", "-c", cmd)
-	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
-	if err != nil {
-		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
-	}
-	// TODO: Remove DEBUG below
-	//fmt.Println("\nRunning ", cmd)
-
-	// Run and gather its output
-	cmdOut, err := runCmd.CombinedOutput()
-	if err != nil {
-		errorMsg(fmt.Sprintf("Failed to run OS command, error was: %+v", err))
-		if hard {
-			// Exit on hard aka fatal errors
-			os.Exit(1)
-		}
-	}
-	_, err = o.Write(cmdOut)
-	if err != nil {
-		errorMsg(fmt.Sprintf("Failed to write to OS command log file, error was: %+v", err))
-	}
-}
+// TODO: Consider creating a new version of this that returns an error - maybe stdErr or looks at the exit code
+// maybe like https://stackoverflow.com/a/10385867
+// and use ProcessState.ExitCode  - see https://golang.org/pkg/os/#ProcessState.ExitCode
+//func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
+//	// Setup command
+//	runCmd := exec.Command("bash", "-c", cmd)
+//	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
+//	if err != nil {
+//		errorMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
+//	}
+//	// TODO: Remove DEBUG below
+//	//fmt.Println("\nRunning ", cmd)
+//
+//	// Run and gather its output
+//	cmdOut, err := runCmd.CombinedOutput()
+//	if err != nil {
+//		errorMsg(fmt.Sprintf("Failed to run OS command, error was: %+v", err))
+//		if hard {
+//			// Exit on hard aka fatal errors
+//			os.Exit(1)
+//		}
+//	}
+//	_, err = o.Write(cmdOut)
+//	if err != nil {
+//		errorMsg(fmt.Sprintf("Failed to write to OS command log file, error was: %+v", err))
+//	}
+//}
+//
+//func runCmds(o io.Writer, c osCmds) {
+//	// Cycle through the provided commands, running them one at at time
+//	for i := range c.cmds {
+//		sendCmd(o,
+//			c.cmds[i],
+//			c.errmsg[i],
+//			c.hard[i])
+//	}
+//}
 
 func main() {
 	// Read command-line args, if any
@@ -432,7 +443,7 @@ func main() {
 	cmdLog := "cmd-output_" + when + ".log"
 	cmdPath := path.Join(logLocation, cmdLog)
 	// Create command output log file in the existing logging directory
-	cmdFile, err := os.OpenFile(cmdPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	cmdLogger, err = os.OpenFile(cmdPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println("")
 		fmt.Println("##############################################################################")
@@ -442,6 +453,7 @@ func main() {
 		fmt.Println("Log files are required for the install, exiting install")
 		os.Exit(1)
 	}
+	//cmdLogger = cmdFile
 	traceMsg(fmt.Sprintf("Successfully created OS Command log file at %+v", cmdPath))
 
 	// Write out the runtime config based on the net of the config file + ENV variables
@@ -481,12 +493,13 @@ func main() {
 	bs := osCmds{}
 	initBootstrap(target.id, &bs)
 
+	// TODO: Move the spinner out to a untility function
 	Spin := spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Bootstrapping..."
 	Spin.Start()
-	// TODO REMOVE COMMENTS BELOW
+	// Run the boostrapping commands for the target OS
 	for i := range bs.cmds {
-		sendCmd(cmdFile,
+		sendCmd(cmdLogger,
 			bs.cmds[i],
 			bs.errmsg[i],
 			bs.hard[i])
@@ -550,9 +563,9 @@ func main() {
 	Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	Spin.Prefix = "Installing OS packages..."
 	Spin.Start()
-	// TODO REMOVE COMMENTS BELOW
+	// Send commands to install OS packages for Target OS
 	for i := range osInst.cmds {
-		sendCmd(cmdFile,
+		sendCmd(cmdLogger,
 			osInst.cmds[i],
 			osInst.errmsg[i],
 			osInst.hard[i])
@@ -560,15 +573,13 @@ func main() {
 	Spin.Stop()
 	statusMsg("Installing OS packages complete")
 
-	// InstallDB (if needed)
-	if !conf.Install.DB.Local && !conf.Install.DB.Exists {
-		// Remote database that doesn't exist - godojo can't help you here
-		errorMsg("Remote database which doens't exist confgiured - unsupported option")
-		statusMsg("Correct configuration or install remote DB before continuing")
-		fmt.Printf("Exiting...\n\n")
-		os.Exit(1)
-	} else if !conf.Install.DB.Exists {
-		// Handle the case that the DB is local and doesn't exist
+	// Sanity check DB configuration from dojoConfig.yml
+	// TODO: Consider moving this to earlier in the process to exit even earlier - maybe a sanity check config func
+	saneDBConfig(conf.Install.DB.Local, conf.Install.DB.Exists)
+
+	// Install the DB if needed
+	if !conf.Install.DB.Exists {
+		//	// Handle the case that the DB is local and doesn't exist
 		sectionMsg("Installing database needed for DefectDojo")
 
 		// Gather OS commands to install the DB
@@ -581,7 +592,7 @@ func main() {
 		Spin.Prefix = "Installing " + conf.Install.DB.Engine + " database for DefectDojo..."
 		Spin.Start()
 		for i := range dbInst.cmds {
-			sendCmd(cmdFile,
+			sendCmd(cmdLogger,
 				dbInst.cmds[i],
 				dbInst.errmsg[i],
 				dbInst.hard[i])
@@ -606,7 +617,7 @@ func main() {
 		Spin.Prefix = "Starting " + conf.Install.DB.Engine + " database for DefectDojo..."
 		Spin.Start()
 		for i := range dbStart.cmds {
-			sendCmd(cmdFile,
+			sendCmd(cmdLogger,
 				dbStart.cmds[i],
 				dbStart.errmsg[i],
 				dbStart.hard[i])
@@ -635,7 +646,7 @@ func main() {
 	Spin.Prefix = "Preparing the OS for DefectDojo..."
 	Spin.Start()
 	for i := range prepCmds.cmds {
-		sendCmd(cmdFile,
+		sendCmd(cmdLogger,
 			prepCmds.cmds[i],
 			prepCmds.errmsg[i],
 			prepCmds.hard[i])
@@ -653,7 +664,7 @@ func main() {
 	Spin.Prefix = "Creating settings.py for DefectDojo..."
 	Spin.Start()
 	for i := range settCmds.cmds {
-		sendCmd(cmdFile,
+		sendCmd(cmdLogger,
 			settCmds.cmds[i],
 			settCmds.errmsg[i],
 			settCmds.hard[i])
@@ -670,7 +681,7 @@ func main() {
 	Spin.Prefix = "Setting up Django for DefectDojo..."
 	Spin.Start()
 	for i := range setupDj.cmds {
-		sendCmd(cmdFile,
+		sendCmd(cmdLogger,
 			setupDj.cmds[i],
 			setupDj.errmsg[i],
 			setupDj.hard[i])

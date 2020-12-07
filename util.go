@@ -94,35 +94,50 @@ func Untar(dst string, r io.Reader) error {
 // Redaction is configurable with Install's Redact boolean config.
 // If true (the default), sensitive info will be redacted
 func Redactatron(l string, on bool) string {
-	// Redact sensitive info from the files in ./logs/
-	clean := l
-	r := "=[REDACTED]="
 	// Redact sensitive data if it's turned on
 	if on {
-		for i := 0; i < len(sensStr); i++ {
+		// Redact sensitive info from the files in ./logs/
+		clean := l
+		r := "[~REDACTED~]"
+		for i := range sensStr {
 			if strings.Contains(clean, sensStr[i]) {
-				clean = strings.Replace(clean, sensStr[0], r, -1)
+				clean = strings.Replace(clean, sensStr[i], r, -1)
 			}
 		}
+		return clean
 	}
-	return clean
+	return l
 }
 
 // InitRedact - sets up the data to be redacted by Redactatron
 func InitRedact(conf *config.DojoConfig) {
-	// Add the strings from DojoConfig to be redacted
-	sensStr[0] = conf.Install.DB.Rpass
-	sensStr[1] = conf.Install.DB.Pass
-	sensStr[2] = conf.Install.OS.Pass
-	sensStr[3] = conf.Install.Admin.Pass
-	sensStr[4] = conf.Settings.CeleryBrokerPassword
-	sensStr[5] = conf.Settings.DatabasePassword
-	sensStr[6] = conf.Settings.SecretKey
-	sensStr[7] = conf.Settings.CredentialAES256Key
-	sensStr[8] = conf.Settings.SocialAuthGoogleOauth2Key
-	sensStr[9] = conf.Settings.SocialAuthGoogleOauth2Secret
-	sensStr[10] = conf.Settings.SocialAuthOktaOauth2Key
-	sensStr[11] = conf.Settings.SocialAuthOktaOauth2Secret
+	// Setup Default strings to redact
+	l := []string{
+		conf.Install.DB.Rpass,
+		conf.Install.DB.Pass,
+		conf.Install.OS.Pass,
+		conf.Install.Admin.Pass,
+		conf.Settings.CeleryBrokerPassword,
+		conf.Settings.DatabasePassword,
+		conf.Settings.SecretKey,
+		conf.Settings.CredentialAES256Key,
+		conf.Settings.SocialAuthGoogleOauth2Key,
+		conf.Settings.SocialAuthGoogleOauth2Secret,
+		conf.Settings.SocialAuthOktaOauth2Key,
+		conf.Settings.SocialAuthOktaOauth2Secret,
+	}
+
+	// Add the strings from DojoConfig to be redacted if they have content
+	for i := range l {
+		if len(l[i]) > 0 {
+			sensStr = append(sensStr, l[i])
+		}
+	}
+}
+
+func addRedact(s string) {
+	// Add an additional string to redact from the logs
+	sensStr = append(sensStr, s)
 }
 
 // Deemb -
@@ -149,7 +164,14 @@ func deemb(f []string, o string) error {
 }
 
 func extr() error {
+	// Check for non-existant tempdir and set to default location if needed
+	// TODO: Create a function to create a directory or fail gracefully
+	//       Use it here and for the logs directory, etc.
+	//_, err := os.Stat(conf.Options.Tmpdir)
+	//if err == nil {
+	// Configured temp directory exists
 	otdir = conf.Options.Tmpdir
+	//}
 	loc := emdir + tgzf
 	d, err := Asset(loc)
 	if err != nil {
