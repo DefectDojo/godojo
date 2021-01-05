@@ -630,6 +630,7 @@ func main() {
 	// (1) Checking connectivity to the DB, (2) checking that the configured Dojo database name doesn't exit already
 	// (3) Droping the existing database if Drop = true is configured (4) Create the DefectDojo database
 	// (5) Add the DB user for DefectDojo to use
+	// TODO: Validate this against @owasp - https://docs.google.com/spreadsheets/d/1HuXh3Zr4mrmb6_YmKkDgzl-ZINYZCvVZn31UCqIGpUA/edit#gid=0
 	sectionMsg("Preparing the database needed for DefectDojo")
 	err = dbPrep(target.id, dbConf)
 	if err != nil {

@@ -164,7 +164,7 @@ func deemb(f []string, o string) error {
 }
 
 func extr() error {
-	// Check for non-existant tempdir and set to default location if needed
+	// Check for non-existent tempdir and set to default location if needed
 	// TODO: Create a function to create a directory or fail gracefully
 	//       Use it here and for the logs directory, etc.
 	//_, err := os.Stat(conf.Options.Tmpdir)

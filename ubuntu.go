@@ -171,7 +171,7 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 		b.id = id
 		b.cmds = []string{
 			"python3 -m virtualenv --python=/usr/bin/python3 " + inst.Root,
-			inst.Root + "/bin/pip3 install -r " + inst.Root + "/django-DefectDojo/requirements.txt",
+			inst.Root + "/bin/pip3 install --use-deprecated=legacy-resolver -r " + inst.Root + "/django-DefectDojo/requirements.txt",
 			"mkdir " + inst.Root + "/logs",
 			"groupadd " + inst.OS.Group,
 			"useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User,

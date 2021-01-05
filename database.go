@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -173,6 +174,7 @@ func prepMariaDB(dbTar *config.DBTarget, os string) error {
 func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	// TODO: Path check any binaries called
 	//       * mysqladmin
+	// TODO: Check MySQL version and handle MySQL 8 and password format change
 
 	// Set Creds based on dojoConfig.yml
 	creds := map[string]string{"user": dbTar.Ruser, "pass": dbTar.Rpass}
@@ -188,6 +190,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	traceMsg(fmt.Sprintf("DB Creds are now %s / %s", creds["user"], creds["pass"]))
 
 	statusMsg("Validating DB connection")
+	// TODO: Convert this and the below calls to a function
 	// Check connectivity to DB
 	DBCmds := osCmds{
 		id: osTar,
@@ -204,88 +207,180 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		traceMsg("validation of connection to MySQL failed")
 		return err
 	}
-	os.Exit(0)
 
 	// Drop existing DefectDojo database if it exists and configuration says to
 	if dbTar.Drop {
 		fmt.Println("Dropping any existing database per Install.DB.Drop=True in dojoConfig.yml")
+		// TODO: Convert this and the above call to a function
 		// Query MySQL to see if the configured database name exists already
+		// Another option is "show databases like '" + dbTar.Name + "';"
 		sql := "SELECT count(SCHEMA_NAME) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" + dbTar.Name + "';"
-		fmt.Printf(sql)
-		//rows, err := dbMySQL.QueryContext(ctx, sql)
-		//if err != nil {
-		//	traceMsg("Attempt to query MySQL database for the configured database name failed")
-		//	return err
-		//}
-		//defer rows.Close()
-
-		// Get the count from the query above - should be a single row returned
-		//_ = rows.Next()
-		var r int
-		//if err := rows.Scan(&r); err != nil {
-		//	traceMsg("Attempt to scan rows from MySQL for database name count database failed")
-		//	return err
-		//}
-
-		// If count is 1, we need to drop the configured databas in MySQL before moving on
-		if r == 1 {
-			// Drop the configured database
-			sql := "DROP DATABASE " + dbTar.Name + ";"
-			fmt.Printf(sql)
-			//_, err := dbMySQL.ExecContext(ctx, sql)
-			//if err != nil {
-			//	traceMsg("Attempt to drop existing database failed")
-			//	fmt.Println("DOH!")
-			//	return err
-			//}
+		DBCk := osCmds{
+			id: osTar,
+			cmds: []string{"mysql --host=" + dbTar.Host +
+				" --user=" + creds["user"] +
+				" --port=" + strconv.Itoa(dbTar.Port) +
+				" --password=" + creds["pass"] +
+				" --execute=\"" + sql + "\""},
+			errmsg: []string{"Unable to connect to the configured MySQL database"},
+			hard:   []bool{false},
 		}
+		out, err := inspectCmd(cmdLogger, DBCk.cmds[0], DBCk.errmsg[0], DBCk.hard[0])
+		if err != nil {
+			traceMsg("validation of connection to MySQL failed")
+			return err
+		}
+		// Clean up stdout from inspectCmd output
+		resp := strings.Trim(
+			strings.ReplaceAll(
+				strings.ReplaceAll(out, "count(SCHEMA_NAME)", ""), "\n", ""), " ")
+		fmt.Printf("out is %+v\n", out)
+		fmt.Printf("resp is %+v\n", resp)
+
+		// Check if there's an existing DB
+		// if resp = 0 then DB doesn't exist
+		// if resp = 1 then the DB exists already and needs to be dropped first
+		ck, err := strconv.Atoi(resp)
+		if err != nil {
+			traceMsg("Unable to convert existing DB check string to int")
+			return err
+		}
+		if ck == 1 {
+			fmt.Println("DB EXISTS so drop that sucker")
+			sql := "DROP DATABASE " + dbTar.Name + ";"
+			fmt.Printf("%+v\n", sql)
+			// TODO: Convert this and the above call to a function
+			DropDB := osCmds{
+				id: osTar,
+				cmds: []string{"mysql --host=" + dbTar.Host +
+					" --user=" + creds["user"] +
+					" --port=" + strconv.Itoa(dbTar.Port) +
+					" --password=" + creds["pass"] +
+					" --execute=\"" + sql + "\""},
+				errmsg: []string{"Unable to drop the existing MySQL database"},
+				hard:   []bool{false},
+			}
+			err := tryCmd(cmdLogger, DropDB.cmds[0], DropDB.errmsg[0], DropDB.hard[0])
+			if err != nil {
+				traceMsg("Failed to drop existing database per configured option to drop existing")
+				return err
+			}
+			fmt.Printf("Existing database %+v dropped since Database Drop was set to %+v\n", dbTar.Name, dbTar.Drop)
+		}
+
 	}
 
 	// Create the DefectDojo database if it doesn't already exist
 	sql := "CREATE DATABASE IF NOT EXISTS " + dbTar.Name + "  CHARACTER SET UTF8;"
-	//result, err := dbMySQL.ExecContext(ctx, sql)
-	//if err != nil {
-	//	traceMsg("Unable to create database for DefectDojo")
-	//	return err
-	//}
+	fmt.Printf("%+v\n", sql)
+	// TODO: Convert this and the above call to a function
+	CreateDB := osCmds{
+		id: osTar,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + creds["pass"] +
+			" --execute=\"" + sql + "\""},
+		errmsg: []string{"Unable to create a new MySQL database for DefectDojo"},
+		hard:   []bool{false},
+	}
+	err = tryCmd(cmdLogger, CreateDB.cmds[0], CreateDB.errmsg[0], CreateDB.hard[0])
+	if err != nil {
+		traceMsg("Failed to create new database for DefectDojo to use")
+		return err
+	}
 
-	// Get a count of rows affected to ensure database was created correctly
-	//rows, err := result.RowsAffected()
-	//if err != nil {
-	//	traceMsg("Failed to get the rows affected after creating the DefectDojo database")
-	//	return err
-	//}
-	//if rows != 1 {
-	//	return errors.New("Error occurred when creating DefectDojo database")
-	//}
+	// Drop user for DefectDojo to use to connect to the database
+	sql = "DROP USER '" + dbTar.User + "'@'localhost';DROP USER '" + dbTar.User + "'@'%';"
+	fmt.Printf("%+v\n", sql)
+	// TODO: Convert this and the above call to a function
+	dropUsr := osCmds{
+		id: osTar,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + creds["pass"] +
+			" --execute=\"" + sql + "\""},
+		errmsg: []string{"Unable to delete existing database user for DefectDojo or one didn't exist"},
+		hard:   []bool{false},
+	}
+	s, err := inspectCmd(cmdLogger, dropUsr.cmds[0], dropUsr.errmsg[0], dropUsr.hard[0])
+	if err != nil {
+		// No reason to return the error as this is expected for most cases
+		// and create user will error out for edge cases
+		traceMsg("Unable to delete existing database user for DefectDojo or one didn't exist")
+		traceMsg(fmt.Sprintf("SQL DROP command output was %+v (in any)", s))
+		traceMsg("Continuing after error deleting user, non-fatal error")
+	}
 
+	// If Drop DB, first delete any existing DD user
+	// TODO: ^
+
+	// First set the appropriate host for the DefectDojo user to connect from
+	usrHost := "localhost"
+	if !dbTar.Local && dbTar.Exists {
+		// DB is remote and exists so localhost won't work
+		usrHost = "%"
+	}
 	// Create user for DefectDojo to use to connect to the database
-	// Note: setup.bash would drop the DefectDojo DB user here - I'm not going to because:
-	// (1) If db is remote or existing, we're already using the root/superuser creds anyway and
-	// (2) If db is local and new (aka existing=false), then there won't be a DefectDojo user
-	sql = "CREATE USER '" + dbTar.User + "'@'" + dbTar.Host + "' IDENTIFIED BY '" + dbTar.Pass + "';"
-	//result, err = dbMySQL.ExecContext(ctx, sql)
-	//if err != nil {
-	//	traceMsg("Unable to create database user for DefectDojo")
-	//	return err
-	//}
+	sql = "CREATE USER '" + dbTar.User + "'@'" + usrHost + "' IDENTIFIED BY '" + dbTar.Pass + "';"
+	fmt.Printf("%+v\n", sql)
+	// TODO: Convert this and the above call to a function
+	CreateUsr := osCmds{
+		id: osTar,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + creds["pass"] +
+			" --execute=\"" + sql + "\""},
+		errmsg: []string{"Unable to create a MySQL database user for DefectDojo"},
+		hard:   []bool{false},
+	}
+	err = tryCmd(cmdLogger, CreateUsr.cmds[0], CreateUsr.errmsg[0], CreateUsr.hard[0])
+	if err != nil {
+		traceMsg("Failed to create database user for DefectDojo")
+		return err
+	}
 
 	// Grant the DefectDojo db user the necessary privileges
 	sql = "GRANT ALL PRIVILEGES ON " + dbTar.Name + ".* TO '" + dbTar.User + "'@'" + dbTar.Host + "';"
-	//result, err = dbMySQL.ExecContext(ctx, sql)
-	//if err != nil {
-	//	traceMsg("Unable to grant database user privileges")
-	//	return err
-	//}
+	fmt.Printf("%+v\n", sql)
+	// TODO: Convert this and the above call to a function
+	grantPrivs := osCmds{
+		id: osTar,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + creds["pass"] +
+			" --execute=\"" + sql + "\""},
+		errmsg: []string{"Unable to grant needed privileges to database user for DefectDojo"},
+		hard:   []bool{false},
+	}
+	err = tryCmd(cmdLogger, grantPrivs.cmds[0], grantPrivs.errmsg[0], grantPrivs.hard[0])
+	if err != nil {
+		traceMsg("Failed to create database user for DefectDojo")
+		return err
+	}
 
 	// Flush privileges to finalize changes to db
 	sql = "FLUSH PRIVILEGES;"
-	//result, err = dbMySQL.ExecContext(ctx, sql)
-	//if err != nil {
-	//	traceMsg("Unable to flush privileges")
-	//	return err
-	//}
-	fmt.Printf(sql)
+	fmt.Printf("%+v\n", sql)
+	// TODO: Convert this and the above call to a function
+	flushPrivs := osCmds{
+		id: osTar,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + creds["pass"] +
+			" --execute=\"" + sql + "\""},
+		errmsg: []string{"Unable to flush database privileges"},
+		hard:   []bool{false},
+	}
+	err = tryCmd(cmdLogger, flushPrivs.cmds[0], flushPrivs.errmsg[0], flushPrivs.hard[0])
+	if err != nil {
+		traceMsg("Failed to create database user for DefectDojo")
+		return err
+	}
 
 	return nil
 }

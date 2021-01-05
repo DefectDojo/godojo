@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -45,6 +46,7 @@ func runCmds(o io.Writer, c osCmds) {
 
 // TODO: Document this and/or move it to a separate package
 func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
+	fmt.Println("Entering tryCmd")
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
 	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
@@ -81,6 +83,7 @@ func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
 		}
 	}
 
+	fmt.Println("Non-error return from tryCmd")
 	return nil
 }
 
@@ -99,4 +102,93 @@ func tryCmds(o io.Writer, c osCmds) error {
 	}
 
 	return nil
+}
+
+// TODO: Document this and/or move it to a separate package
+func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error) {
+	fmt.Println("Inside inspectCmd")
+	// Setup command
+	runCmd := exec.Command("bash", "-c", cmd)
+	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
+	if err != nil {
+		traceMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
+		return "", err
+	}
+
+	// Hook up stdout and strerr
+	var tmpBuf bytes.Buffer
+	multi := io.MultiWriter(o, &tmpBuf)
+	if err != nil {
+		traceMsg(fmt.Sprintf("Failed to setup MultiWriter, error was: %+v", err))
+		return "", err
+	}
+	runCmd.Stdout = multi
+	runCmd.Stderr = o
+
+	// Start the command
+	err = runCmd.Start()
+	if err != nil {
+		traceMsg(fmt.Sprintf("Failed to start command, error was: %+v", err))
+		return "", err
+	}
+
+	fmt.Println("Before runCmd.Wait()")
+	// Wait for command to exit, then check the exit code
+	err = runCmd.Wait()
+	if err != nil {
+		// Check if the error is a ExitError
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			// The program has exited with an exit code != 0
+			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+				// Above casts the exiterr to syscll.WaitStatus aka unint32
+				traceMsg(fmt.Sprintf("%s errored with exit status: %d", cmd, status.ExitStatus()))
+				return "", err
+			}
+		} else {
+			traceMsg(fmt.Sprintf("%s errored from Wait(): %v", cmd, err))
+			return "", err
+		}
+	}
+	fmt.Println("After runCmd.Wait()")
+
+	//out, err := ioutil.ReadAll(r)
+	//if err != nil {
+	//	traceMsg(fmt.Sprintf("Failed to read from pipe, error was: %+v", err))
+	//	return "", err
+	//}
+	//fmt.Println("Before o.Write")
+	//_, err = o.Write(out)
+	//if err != nil {
+	//	traceMsg(fmt.Sprintf("Failed to write to logging writer, error was: %+v", err))
+	//	return "", err
+	//}
+
+	fmt.Printf("tmpBuf is %+v\n", tmpBuf.String())
+
+	return tmpBuf.String(), nil
+}
+
+func inspectCmds(o io.Writer, c osCmds) ([]string, error) {
+	fmt.Println("Inside inspectCmds")
+	ret := make([]string, 1)
+	// Cycle through the provided commands, trying them one at at time
+	for i := range c.cmds {
+		fmt.Println("Before command invoke")
+		fmt.Printf("current cmd: %+v\n", c.cmds[i])
+		out, err := inspectCmd(o,
+			c.cmds[i],
+			c.errmsg[i],
+			c.hard[i])
+
+		fmt.Println("After command invoke")
+		if err != nil {
+			traceMsg(fmt.Sprintf("Command %s errored with %s. Underlying error is %+v", c.cmds[i], c.errmsg[i], err))
+			return ret, errors.New(c.errmsg[i])
+		}
+		fmt.Println("Past the inspectCmd error check")
+		ret = append(ret, out)
+
+	}
+
+	return ret, nil
 }
