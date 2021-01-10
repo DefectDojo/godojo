@@ -137,8 +137,6 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 		credentialKey = base64.StdEncoding.EncodeToString(s2)
 	}
 
-	fmt.Printf("secretKey is %v\n", secretKey)
-
 	// Set the values from the configuration file
 	env := envVals{
 		DD_DEBUG:                              i.Settings.Debug,
@@ -169,7 +167,7 @@ func genAndWriteEnv(i *config.DojoConfig, dbURL string) {
 	t := template.Must(template.New("envProd").Parse(envProd))
 
 	// Open a file to write the contents of the parsed template
-	fmt.Printf("Location of env file is %+v\n", i.Install.Root, "/django-DefectDojo/dojo/settings/.env.prod")
+	traceMsg(fmt.Sprintf("Location of env file is %+v/django-DefectDojo/dojo/settings/.env.prod\n", i.Install.Root))
 	f, err := os.Create(i.Install.Root + "/django-DefectDojo/dojo/settings/.env.prod")
 	if err != nil {
 		errorMsg("Unable to create .env.prod file for settings.py configuration")

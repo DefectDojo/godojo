@@ -11,9 +11,11 @@ import (
 )
 
 // InstallTargets holds the distro and versions supported for Dojo installations
+// TODO: Use this to check install target after determining what it is -
+//       currently unused
 var InstallTargets = map[string][]string{
 
-	"ubuntu": {"18.04", "18.10", "19.04"},
+	"ubuntu": {"18.04", "20.04", "20.10"},
 	"debian": {"stretch", "buster"},
 }
 
@@ -309,10 +311,11 @@ func parseFile(f string, sep string, flds map[string]string) map[string]string {
 }
 
 // TODO: Make this fail for unsupported OSes
+// TODO: Consider making a bootstrap per Linux distro switching to those here
 func initBootstrap(id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		b.id = "ubuntu:18.04"
+	switch distOnly(id) {
+	case "ubuntu":
+		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
@@ -330,6 +333,9 @@ func initBootstrap(id string, b *osCmds) {
 		}
 
 		return
+	default:
+		fmt.Println("Unsupported OS to bootstrap, quitting.")
+		os.Exit(1)
 
 	}
 }
