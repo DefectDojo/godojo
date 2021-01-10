@@ -13,7 +13,11 @@ import (
 func ubuntuInitOSInst(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
-		b.id = "ubuntu:18.04"
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		b.id = id
 		b.cmds = []string{
 			fmt.Sprintf("curl -sS %s | apt-key add -", YarnGPG),
 			fmt.Sprintf("echo -n %s > /etc/apt/sources.list.d/yarn.list", YarnRepo),
@@ -47,6 +51,10 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 func ubuntuInstSQLite(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3",
@@ -65,6 +73,10 @@ func ubuntuInstSQLite(id string, b *osCmds) {
 func ubuntuInstMariaDB(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server libmariadbclient-dev",
@@ -81,8 +93,13 @@ func ubuntuInstMariaDB(id string, b *osCmds) {
 
 // Commands to install MySQL on Ubuntu
 func ubuntuInstMySQL(id string, b *osCmds) {
+	traceMsg(fmt.Sprintf("Installing Ubuntu MySQL for %s\n", id))
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev",
@@ -101,6 +118,10 @@ func ubuntuInstMySQL(id string, b *osCmds) {
 func ubuntuInstPostgreSQL(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y libpq-dev postgresql postgresql-contrib",
@@ -168,17 +189,23 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 	// Setup virutalenv, setup OS User, and chown DefectDojo app root to the dojo user
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"python3 -m virtualenv --python=/usr/bin/python3 " + inst.Root,
+			inst.Root + "/bin/python3 -m pip install --upgrade pip",
 			inst.Root + "/bin/pip3 install --use-deprecated=legacy-resolver -r " + inst.Root + "/django-DefectDojo/requirements.txt",
 			"mkdir " + inst.Root + "/logs",
-			"groupadd " + inst.OS.Group,
-			"useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User,
+			"groupadd -f " + inst.OS.Group,
+			"id " + inst.OS.User + " &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User + "; fi",
 			"chown -R " + inst.OS.User + "." + inst.OS.Group + " " + inst.Root,
 		}
 		b.errmsg = []string{
 			"Unable to setup virtualenv for DefectDojo",
+			"Unable to update pip to latest",
 			"Unable to install Python3 modules for DefectDojo",
 			"Unable to create a directory for logs",
 			"Unable to create a group for DefectDojo OS user",
@@ -186,6 +213,7 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 			"Unable to change ownership of the DefectDojo app root directory",
 		}
 		b.hard = []bool{
+			true,
 			true,
 			true,
 			true,
@@ -202,6 +230,10 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	// Django installs - migrations, create Django superuser
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		b.id = id
 		b.cmds = []string{
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput",

@@ -46,7 +46,7 @@ func runCmds(o io.Writer, c osCmds) {
 
 // TODO: Document this and/or move it to a separate package
 func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
-	fmt.Println("Entering tryCmd")
+	traceMsg("Entering tryCmd")
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
 	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
@@ -83,7 +83,7 @@ func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
 		}
 	}
 
-	fmt.Println("Non-error return from tryCmd")
+	traceMsg("Non-error return from tryCmd")
 	return nil
 }
 
@@ -106,7 +106,7 @@ func tryCmds(o io.Writer, c osCmds) error {
 
 // TODO: Document this and/or move it to a separate package
 func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error) {
-	fmt.Println("Inside inspectCmd")
+	traceMsg("Inside inspectCmd")
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
 	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
@@ -132,7 +132,7 @@ func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error)
 		return "", err
 	}
 
-	fmt.Println("Before runCmd.Wait()")
+	traceMsg("Before runCmd.Wait()")
 	// Wait for command to exit, then check the exit code
 	err = runCmd.Wait()
 	if err != nil {
@@ -149,22 +149,9 @@ func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error)
 			return "", err
 		}
 	}
-	fmt.Println("After runCmd.Wait()")
+	traceMsg("After runCmd.Wait()")
 
-	//out, err := ioutil.ReadAll(r)
-	//if err != nil {
-	//	traceMsg(fmt.Sprintf("Failed to read from pipe, error was: %+v", err))
-	//	return "", err
-	//}
-	//fmt.Println("Before o.Write")
-	//_, err = o.Write(out)
-	//if err != nil {
-	//	traceMsg(fmt.Sprintf("Failed to write to logging writer, error was: %+v", err))
-	//	return "", err
-	//}
-
-	fmt.Printf("tmpBuf is %+v\n", tmpBuf.String())
-
+	traceMsg("Non-error return from inspectCmd")
 	return tmpBuf.String(), nil
 }
 

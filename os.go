@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/mtesauro/godojo/config"
@@ -11,6 +12,10 @@ import (
 func initOSInst(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuInitOSInst(id, b)
 
 	}
@@ -20,6 +25,10 @@ func initOSInst(id string, b *osCmds) {
 func instSQLite(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuInstSQLite(id, b)
 	}
 	return
@@ -28,14 +37,23 @@ func instSQLite(id string, b *osCmds) {
 func instMariaDB(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuInstMariaDB(id, b)
 	}
 	return
 }
 
 func instMySQL(id string, b *osCmds) {
+	traceMsg(fmt.Sprintf("Installing MySQL for %s\n", id))
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuInstMySQL(id, b)
 	}
 	return
@@ -44,6 +62,10 @@ func instMySQL(id string, b *osCmds) {
 func instPostgreSQL(id string, b *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuInstPostgreSQL(id, b)
 	}
 	return
@@ -56,6 +78,10 @@ func defaultDBCreds(db string, os string) map[string]string {
 	// Get the default creds based on OS
 	switch os {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuDefaultDBCreds(db, creds)
 	}
 
@@ -65,6 +91,10 @@ func defaultDBCreds(db string, os string) map[string]string {
 func osPrep(id string, inst *config.InstallConfig, cmds *osCmds) {
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuOSPrep(id, inst, cmds)
 	}
 	return
@@ -116,6 +146,10 @@ func setupDjango(id string, inst *config.DojoConfig, cmds *osCmds) {
 	// Generate the commands to do the Django install
 	switch id {
 	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
 		ubuntuSetupDDjango(id, &inst.Install, cmds)
 	}
 	return

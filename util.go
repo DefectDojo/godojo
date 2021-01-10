@@ -16,6 +16,14 @@ import (
 	"github.com/mtesauro/godojo/config"
 )
 
+func distOnly(d string) string {
+	if strings.Contains(d, "ubuntu") {
+		dist := strings.Split(d, ":")
+		return dist[0]
+	}
+	return "Unable-to-parse-distro"
+}
+
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
 // creating the file structure at 'dst' along the way, and writing any files
 // Based on https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07

@@ -54,7 +54,7 @@ var (
 const (
 	// URLs needed by the installer
 	// TODO: Move most of these into dojoConfig.yml optinal section
-	HelpURL    = "https://github.com/mtesauro/godojo"
+	HelpURL    = "https://github.com/DefectDojo/godojo"
 	ReleaseURL = "https://github.com/DefectDojo/django-DefectDojo/archive/"
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
 	YarnGPG    = "https://dl.yarnpkg.com/debian/pubkey.gpg"
@@ -623,7 +623,7 @@ func main() {
 				dbStart.hard[i])
 		}
 		Spin.Stop()
-		statusMsg("Installing Database complete")
+		statusMsg("Starting Database complete")
 	}
 
 	// Preapare the database for DefectDojo by:

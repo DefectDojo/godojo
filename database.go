@@ -54,6 +54,8 @@ func startDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 		case "ubuntu:18.04":
 			fallthrough
 		case "ubuntu:20.04":
+			fallthrough
+		case "ubuntu:20.10":
 			dCmd.id = osTar
 			dCmd.cmds = []string{
 				"echo 'Nothing to start for SQLite'",
@@ -71,6 +73,8 @@ func startDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 		case "ubuntu:18.04":
 			fallthrough
 		case "ubuntu:20.04":
+			fallthrough
+		case "ubuntu:20.10":
 			dCmd.id = osTar
 			// TODO: Propably time to convert this to systemctl calls
 			//       also consider enabling the service just in case
@@ -90,6 +94,8 @@ func startDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 		case "ubuntu:18.04":
 			fallthrough
 		case "ubuntu:20.04":
+			fallthrough
+		case "ubuntu:20.10":
 			dCmd.id = osTar
 			// TODO: Propably time to convert this to systemctl calls
 			//       also consider enabling the service just in case
@@ -109,6 +115,8 @@ func startDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 		case "ubuntu:18.04":
 			fallthrough
 		case "ubuntu:20.04":
+			fallthrough
+		case "ubuntu:20.10":
 			dCmd.id = osTar
 			// TODO: Propably time to convert this to systemctl calls
 			//       also consider enabling the service just in case
@@ -210,7 +218,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 
 	// Drop existing DefectDojo database if it exists and configuration says to
 	if dbTar.Drop {
-		fmt.Println("Dropping any existing database per Install.DB.Drop=True in dojoConfig.yml")
+		traceMsg("Dropping any existing database per Install.DB.Drop=True in dojoConfig.yml")
 		// TODO: Convert this and the above call to a function
 		// Query MySQL to see if the configured database name exists already
 		// Another option is "show databases like '" + dbTar.Name + "';"
@@ -234,8 +242,6 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		resp := strings.Trim(
 			strings.ReplaceAll(
 				strings.ReplaceAll(out, "count(SCHEMA_NAME)", ""), "\n", ""), " ")
-		fmt.Printf("out is %+v\n", out)
-		fmt.Printf("resp is %+v\n", resp)
 
 		// Check if there's an existing DB
 		// if resp = 0 then DB doesn't exist
@@ -246,9 +252,9 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 			return err
 		}
 		if ck == 1 {
-			fmt.Println("DB EXISTS so drop that sucker")
+			traceMsg("DB EXISTS so droping that sucker")
 			sql := "DROP DATABASE " + dbTar.Name + ";"
-			fmt.Printf("%+v\n", sql)
+			traceMsg(fmt.Sprintf("%+v\n", sql))
 			// TODO: Convert this and the above call to a function
 			DropDB := osCmds{
 				id: osTar,
@@ -272,7 +278,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 
 	// Create the DefectDojo database if it doesn't already exist
 	sql := "CREATE DATABASE IF NOT EXISTS " + dbTar.Name + "  CHARACTER SET UTF8;"
-	fmt.Printf("%+v\n", sql)
+	traceMsg(fmt.Sprintf("%+v\n", sql))
 	// TODO: Convert this and the above call to a function
 	CreateDB := osCmds{
 		id: osTar,
@@ -290,9 +296,9 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		return err
 	}
 
-	// Drop user for DefectDojo to use to connect to the database
+	// Drop user DefectDojo uses to connect to the database
 	sql = "DROP USER '" + dbTar.User + "'@'localhost';DROP USER '" + dbTar.User + "'@'%';"
-	fmt.Printf("%+v\n", sql)
+	traceMsg(fmt.Sprintf("%+v\n", sql))
 	// TODO: Convert this and the above call to a function
 	dropUsr := osCmds{
 		id: osTar,
@@ -324,7 +330,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	}
 	// Create user for DefectDojo to use to connect to the database
 	sql = "CREATE USER '" + dbTar.User + "'@'" + usrHost + "' IDENTIFIED BY '" + dbTar.Pass + "';"
-	fmt.Printf("%+v\n", sql)
+	traceMsg(fmt.Sprintf("%+v\n", sql))
 	// TODO: Convert this and the above call to a function
 	CreateUsr := osCmds{
 		id: osTar,
@@ -344,7 +350,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 
 	// Grant the DefectDojo db user the necessary privileges
 	sql = "GRANT ALL PRIVILEGES ON " + dbTar.Name + ".* TO '" + dbTar.User + "'@'" + dbTar.Host + "';"
-	fmt.Printf("%+v\n", sql)
+	traceMsg(fmt.Sprintf("%+v\n", sql))
 	// TODO: Convert this and the above call to a function
 	grantPrivs := osCmds{
 		id: osTar,
@@ -364,7 +370,7 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 
 	// Flush privileges to finalize changes to db
 	sql = "FLUSH PRIVILEGES;"
-	fmt.Printf("%+v\n", sql)
+	traceMsg(fmt.Sprintf("%+v\n", sql))
 	// TODO: Convert this and the above call to a function
 	flushPrivs := osCmds{
 		id: osTar,
