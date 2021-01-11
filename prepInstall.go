@@ -10,7 +10,7 @@ import (
 )
 
 func defaultConfig() {
-	fmt.Println("Inside of defaultConfig")
+	traceMsg("Inside of defaultConfig")
 	// Temporarily write out the config file into current working directory
 	createDefaultConfig(cf, false)
 
@@ -179,8 +179,6 @@ func readEnvVars() { // Env variables pulled from repo Add newly supported env v
 		"DD_WHITENOISE":                                  true,
 		"DD_WKHTMLTOPDF":                                 true,
 		"DOJO_ADMIN_USER":                                true,
-		// TYPO in the source - "DD_DATABASE_PASsWORD": true,
-		// TODO: Fix https://github.com/mtesauro/godojo/issues/1
 	} // End of dojoEnvs declaration
 
 	match := false
@@ -197,389 +195,240 @@ func readEnvVars() { // Env variables pulled from repo Add newly supported env v
 		}
 	}
 
+	// Return early if no env variables are matched
+	if !match {
+		return
+	}
+
 	// Override config values if we found matching Env vars
-	if match {
-		for k, v := range overrides {
-			// Set DojoConfig struct values from Env variables to override config values
-			// Have to do this as a switch statement as there's no sanity to DefectDojo env var naming
-			switch k {
-			case "DD_ADMIN_FIRST_NAME":
-				conf.Settings.AdminFirstName = v
-			case "DD_ADMIN_LAST_NAME":
-				conf.Settings.AdminLastName = v
-			case "DD_ADMIN_MAIL":
-				conf.Settings.AdminMail = v
-			case "DD_ADMIN_PASSWORD":
-				conf.Settings.AdminPassword = v
-			case "DD_ADMINS":
-				conf.Settings.Admins = v
-			case "DD_ADMIN_USER":
-				conf.Settings.AdminUser = v
-			case "DD_ALLOWED_HOSTS":
-				conf.Settings.AllowedHosts = v
-			case "DD_CELERY_BEAT_SCHEDULE_FILENAME":
-				conf.Settings.CeleryBeatScheduleFilename = v
-			case "DD_CELERY_BROKER_HOST":
-				conf.Settings.CeleryBrokerHost = v
-			case "DD_CELERY_BROKER_PASSWORD":
-				conf.Settings.CeleryBrokerPassword = v
-			case "DD_CELERY_BROKER_PATH":
-				conf.Settings.CeleryBrokerPath = v
-			case "DD_CELERY_BROKER_PORT":
-				port, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CELERY_BROKER_PORT provided via environmental variable isn't a valid port number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				if port > 65535 {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CELERY_BROKER_PORT provided via environmental variable is too large")
-					os.Exit(1)
-				}
-				conf.Settings.CeleryBrokerPort = port
-			case "DD_CELERY_BROKER_SCHEME":
-				conf.Settings.CeleryBrokerScheme = v
-			case "DD_CELERY_BROKER_URL":
-				conf.Settings.CeleryBrokerURL = v
-			case "DD_CELERY_BROKER_USER":
-				conf.Settings.CeleryBrokerUser = v
-			case "DD_CELERY_LOG_LEVEL":
-				conf.Settings.CeleryLogLevel = v
-			case "DD_CELERY_RESULT_BACKEND":
-				conf.Settings.CeleryResultBackend = v
-			case "DD_CELERY_RESULT_EXPIRES":
-				exp, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CELERY_RESULT_EXPIRES provided via environmental variable isn't a valid number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.CeleryResultExpires = exp
-			case "DD_CELERY_TASK_IGNORE_RESULT":
-				res, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CELERY_TASK_IGNORE_RESULT environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.CeleryTaskIgnoreResult = res
-			case "DD_CELERY_TASK_SERIALIZER":
-				conf.Settings.CeleryTaskSerializer = v
-			case "DD_CREDENTIAL_AES_256_KEY":
-				conf.Settings.CredentialAES256Key = v
-			case "DD_CSRF_COOKIE_HTTPONLY":
-				htt, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CSRF_COOKIE_HTTPONLY environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.CSRFCookieHTTPOnly = htt
-			case "DD_CSRF_COOKIE_SECURE":
-				sec, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_CSRF_COOKIE_SECURE environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.CSRFCookieSecure = sec
-			case "DD_DATABASE_ENGINE":
-				conf.Settings.DatabaseEngine = v
-			case "DD_DATABASE_HOST":
-				conf.Settings.DatabaseHost = v
-			case "DD_DATABASE_NAME":
-				conf.Settings.DatabaseName = v
-			case "DD_DATABASE_PASSWORD":
-				conf.Settings.DatabasePassword = v
-			case "DD_DATABASE_PORT":
-				conf.Settings.DatabasePort = v
-			case "DD_DATABASE_TYPE":
-				conf.Settings.DatabaseType = v
-			case "DD_DATABASE_URL":
-				conf.Settings.DatabaseURL = v
-			case "DD_DATABASE_USER":
-				conf.Settings.DatabaseUser = v
-			case "DD_DATA_UPLOAD_MAX_MEMORY_SIZE":
-				siz, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_DATA_UPLOAD_MAX_MEMORY_SIZE provided via environmental variable isn't a valid number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.DataUploadMaxMemorySize = siz
-			case "DD_DEBUG":
-				deb, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_DEBUG environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.Debug = deb
-			case "DD_DJANGO_ADMIN_ENABLED":
-				ena, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_DJANGO_ADMIN_ENABLED environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.DjangoAdminEnabled = ena
-			case "DD_EMAIL_URL":
-				conf.Settings.EmailURL = v
-			case "DD_ENV":
-				conf.Settings.Env = v
-			case "DD_ENV_PATH":
-				conf.Settings.EnvPath = v
-			case "DD_FORCE_LOWERCASE_TAGS":
-				tag, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_FORCE_LOWERCASE_TAGS environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.ForceLowercaseTags = tag
-			case "DD_HOST":
-				conf.Settings.Host = v
-			case "DD_INITIALIZE":
-				conf.Settings.Initialize = v
-			case "DD_LANG":
-				conf.Settings.Lang = v
-			case "DD_LANGUAGE_CODE":
-				conf.Settings.LanguageCode = v
-			case "DD_LOGIN_REDIRECT_URL":
-				conf.Settings.LoginRedirectURL = v
-			case "DD_MAX_TAG_LENGTH":
-				leng, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_MAX_TAG_LENGTH provided via environmental variable isn't a valid number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				// TODO: Look up maximum tag length in data model and check for that too
-				conf.Settings.MaxTagLength = leng
-			case "DD_MEDIA_ROOT":
-				conf.Settings.MediaRoot = v
-			case "DD_MEDIA_URL":
-				conf.Settings.MediaURL = v
-			case "DD_PORT":
-				conf.Settings.Port = v
-			case "DD_PORT_SCAN_CONTACT_EMAIL":
-				conf.Settings.PortScanContactEmail = v
-			case "DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST":
-				conf.Settings.PortScanExternalUnitEmailList = v
-			case "DD_PORT_SCAN_RESULT_EMAIL_FROM":
-				conf.Settings.PortScanResultEmailFrom = v
-			case "DD_PORT_SCAN_SOURCE_IP":
-				conf.Settings.PortScanSourceIP = v
-			case "DD_ROOT":
-				conf.Settings.Root = v
-			case "DD_SECRET_KEY":
-				conf.Settings.SecretKey = v
-			case "DD_SECURE_BROWSER_XSS_FILTER":
-				fil, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SECURE_BROWSER_XSS_FILTER environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SecureBrowserXSSFilter = fil
-			case "DD_SECURE_CONTENT_TYPE_NOSNIFF":
-				conf.Settings.SecureContentTypeNosniff = v
-			case "DD_SECURE_HSTS_INCLUDE_SUBDOMAINS":
-				sub, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SECURE_HSTS_INCLUDE_SUBDOMAINS environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SecureHSTSIncludeSubdomains = sub
-			case "DD_SECURE_HSTS_SECONDS":
-				sec, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SECURE_HSTS_SECONDS provided via environmental variable isn't a valid number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SecureHSTSSeconds = sec
-			case "DD_SECURE_PROXY_SSL_HEADER":
-				hea, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SECURE_PROXY_SSL_HEADER environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SecureProxySSLHeader = hea
-			case "DD_SECURE_SSL_REDIRECT":
-				red, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SECURE_SSL_REDIRECT environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SecureSSLRedirect = red
-			case "DD_SESSION_COOKIE_HTTPONLY":
-				htt, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SESSION_COOKIE_HTTPONLY environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SessionCookieHTTPOnly = htt
-			case "DD_SESSION_COOKIE_SECURE":
-				sec, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SESSION_COOKIE_SECURE environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SessionCookieSecure = sec
-			case "DD_SITE_ID":
-				eid, err := strconv.Atoi(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_SITE_ID provided via environmental variable isn't a valid number")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.SiteID = eid
-			case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_ENABLED":
-				conf.Settings.SocialAuthAzureadTenantOauth2Enabled = v
-			case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY":
-				conf.Settings.SocialAuthAzureadTenantOauth2Key = v
-			case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_RESOURCE":
-				conf.Settings.SocialAuthAzureadTenantOauth2Resource = v
-			case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET":
-				conf.Settings.SocialAuthAzureadTenantOauth2Secret = v
-			case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID":
-				conf.Settings.SocialAuthAzureadTenantOauth2TenantID = v
-			case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_ENABLE":
-				conf.Settings.SocialAuthGoogleOauth2Enable = v
-			case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY":
-				conf.Settings.SocialAuthGoogleOauth2Key = v
-			case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET":
-				conf.Settings.SocialAuthGoogleOauth2Secret = v
-			case "DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL":
-				conf.Settings.SocialAuthOktaOauth2APIURL = v
-			case "DD_SOCIAL_AUTH_OKTA_OAUTH2_ENABLED":
-				conf.Settings.SocialAuthOktaOauth2Enabled = v
-			case "DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY":
-				conf.Settings.SocialAuthOktaOauth2Key = v
-			case "DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET":
-				conf.Settings.SocialAuthOktaOauth2Secret = v
-			case "DD_STATIC_ROOT":
-				conf.Settings.StaticRoot = v
-			case "DD_STATIC_URL":
-				conf.Settings.StaticURL = v
-			case "DD_TEAM_NAME":
-				conf.Settings.TeamName = v
-			case "DD_TEST_DATABASE_NAME":
-				conf.Settings.TestDatabaseName = v
-			case "DD_TEST_RUNNER":
-				conf.Settings.TestRunner = v
-			case "DD_TIME_ZONE":
-				conf.Settings.TimeZone = v
-			case "DD_TRACK_MIGRATIONS":
-				mig, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_TRACK_MIGRATIONS environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.TrackMigrations = mig
-			case "DD_URL_PREFIX":
-				conf.Settings.URLPrefix = v
-			case "DD_USE_I18N":
-				i18, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_USE_I18N environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.UseI18N = i18
-			case "DD_USE_L10N":
-				l10, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_USE_L10N environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.UseL10N = l10
-			case "DD_USE_TZ":
-				utz, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_USE_TZ environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.UseTZ = utz
-			case "DD_UUID":
-				conf.Settings.UUID = v
-			case "DD_UWSGI_ENDPOINT":
-				conf.Settings.UwsgiEndpoint = v
-			case "DD_UWSGI_HOST":
-				conf.Settings.UwsgiHost = v
-			case "DD_UWSGI_MODE":
-				conf.Settings.UwsgiMode = v
-			case "DD_UWSGI_PASS":
-				conf.Settings.UwsgiPass = v
-			case "DD_UWSGI_PORT":
-				conf.Settings.UwsgiPort = v
-			case "DD_WHITENOISE":
-				whi, err := strconv.ParseBool(v)
-				if err != nil {
-					fmt.Println("ERROR:")
-					fmt.Println("DD_WHITENOISE environmental variable was not a boolean.\n" +
-						"Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
-					fmt.Printf("Error was: %v\n", err)
-					os.Exit(1)
-				}
-				conf.Settings.Whitenoise = whi
-				fmt.Printf("WHITENOISE is %v\n", conf.Settings.Whitenoise)
-			case "DD_WKHTMLTOPDF":
-				conf.Settings.Wkhtmltopdf = v
-			case "DOJO_ADMIN_USER":
-				conf.Settings.DojoAdminUser = v
-				// TODO: Deprecate me
-			}
+	for k, v := range overrides {
+		// Set DojoConfig struct values from Env variables to override config values
+		// Have to do this as a switch statement as there's no sanity to DefectDojo env var naming
+		switch k {
+		case "DD_ADMIN_FIRST_NAME":
+			conf.Settings.AdminFirstName = v
+		case "DD_ADMIN_LAST_NAME":
+			conf.Settings.AdminLastName = v
+		case "DD_ADMIN_MAIL":
+			conf.Settings.AdminMail = v
+		case "DD_ADMIN_PASSWORD":
+			conf.Settings.AdminPassword = v
+		case "DD_ADMINS":
+			conf.Settings.Admins = v
+		case "DD_ADMIN_USER":
+			conf.Settings.AdminUser = v
+		case "DD_ALLOWED_HOSTS":
+			conf.Settings.AllowedHosts = v
+		case "DD_CELERY_BEAT_SCHEDULE_FILENAME":
+			conf.Settings.CeleryBeatScheduleFilename = v
+		case "DD_CELERY_BROKER_HOST":
+			conf.Settings.CeleryBrokerHost = v
+		case "DD_CELERY_BROKER_PASSWORD":
+			conf.Settings.CeleryBrokerPassword = v
+		case "DD_CELERY_BROKER_PATH":
+			conf.Settings.CeleryBrokerPath = v
+		case "DD_CELERY_BROKER_PORT":
+			port := convInt(v, "DD_CELERY_BROKER_PORT provided via environmental variable isn't a valid port number")
+			intLessThan(port, 65535, "DD_CELERY_BROKER_PORT provided via environmental variable is too large")
+			conf.Settings.CeleryBrokerPort = port
+		case "DD_CELERY_BROKER_SCHEME":
+			conf.Settings.CeleryBrokerScheme = v
+		case "DD_CELERY_BROKER_URL":
+			conf.Settings.CeleryBrokerURL = v
+		case "DD_CELERY_BROKER_USER":
+			conf.Settings.CeleryBrokerUser = v
+		case "DD_CELERY_LOG_LEVEL":
+			conf.Settings.CeleryLogLevel = v
+		case "DD_CELERY_RESULT_BACKEND":
+			conf.Settings.CeleryResultBackend = v
+		case "DD_CELERY_RESULT_EXPIRES":
+			conf.Settings.CeleryResultExpires = convInt(v, "DD_CELERY_RESULT_EXPIRES provided via environmental variable isn't a valid number")
+		case "DD_CELERY_TASK_IGNORE_RESULT":
+			conf.Settings.CeleryTaskIgnoreResult = convBool(v, "DD_CELERY_TASK_IGNORE_RESULT environmental variable was not a boolean.")
+		case "DD_CELERY_TASK_SERIALIZER":
+			conf.Settings.CeleryTaskSerializer = v
+		case "DD_CREDENTIAL_AES_256_KEY":
+			conf.Settings.CredentialAES256Key = v
+		case "DD_CSRF_COOKIE_HTTPONLY":
+			conf.Settings.CSRFCookieHTTPOnly = convBool(v, "DD_CSRF_COOKIE_HTTPONLY environmental variable was not a boolean.")
+		case "DD_CSRF_COOKIE_SECURE":
+			conf.Settings.CSRFCookieSecure = convBool(v, "DD_CSRF_COOKIE_SECURE environmental variable was not a boolean.")
+		case "DD_DATABASE_ENGINE":
+			conf.Settings.DatabaseEngine = v
+		case "DD_DATABASE_HOST":
+			conf.Settings.DatabaseHost = v
+		case "DD_DATABASE_NAME":
+			conf.Settings.DatabaseName = v
+		case "DD_DATABASE_PASSWORD":
+			conf.Settings.DatabasePassword = v
+		case "DD_DATABASE_PORT":
+			conf.Settings.DatabasePort = v
+		case "DD_DATABASE_TYPE":
+			conf.Settings.DatabaseType = v
+		case "DD_DATABASE_URL":
+			conf.Settings.DatabaseURL = v
+		case "DD_DATABASE_USER":
+			conf.Settings.DatabaseUser = v
+		case "DD_DATA_UPLOAD_MAX_MEMORY_SIZE":
+			conf.Settings.DataUploadMaxMemorySize = convInt(v, "DD_DATA_UPLOAD_MAX_MEMORY_SIZE provided via environmental variable isn't a valid number")
+		case "DD_DEBUG":
+			conf.Settings.Debug = convBool(v, "DD_DEBUG environmental variable was not a boolean.")
+		case "DD_DJANGO_ADMIN_ENABLED":
+			conf.Settings.DjangoAdminEnabled = convBool(v, "DD_DJANGO_ADMIN_ENABLED environmental variable was not a boolean.")
+		case "DD_EMAIL_URL":
+			conf.Settings.EmailURL = v
+		case "DD_ENV":
+			conf.Settings.Env = v
+		case "DD_ENV_PATH":
+			conf.Settings.EnvPath = v
+		case "DD_FORCE_LOWERCASE_TAGS":
+			conf.Settings.ForceLowercaseTags = convBool(v, "DD_FORCE_LOWERCASE_TAGS environmental variable was not a boolean.")
+		case "DD_HOST":
+			conf.Settings.Host = v
+		case "DD_INITIALIZE":
+			conf.Settings.Initialize = v
+		case "DD_LANG":
+			conf.Settings.Lang = v
+		case "DD_LANGUAGE_CODE":
+			conf.Settings.LanguageCode = v
+		case "DD_LOGIN_REDIRECT_URL":
+			conf.Settings.LoginRedirectURL = v
+		case "DD_MAX_TAG_LENGTH":
+			// TODO: Look up maximum tag length in data model and check for that too
+			conf.Settings.MaxTagLength = convInt(v, "DD_MAX_TAG_LENGTH provided via environmental variable isn't a valid number")
+		case "DD_MEDIA_ROOT":
+			conf.Settings.MediaRoot = v
+		case "DD_MEDIA_URL":
+			conf.Settings.MediaURL = v
+		case "DD_PORT":
+			conf.Settings.Port = v
+		case "DD_PORT_SCAN_CONTACT_EMAIL":
+			conf.Settings.PortScanContactEmail = v
+		case "DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST":
+			conf.Settings.PortScanExternalUnitEmailList = v
+		case "DD_PORT_SCAN_RESULT_EMAIL_FROM":
+			conf.Settings.PortScanResultEmailFrom = v
+		case "DD_PORT_SCAN_SOURCE_IP":
+			conf.Settings.PortScanSourceIP = v
+		case "DD_ROOT":
+			conf.Settings.Root = v
+		case "DD_SECRET_KEY":
+			conf.Settings.SecretKey = v
+		case "DD_SECURE_BROWSER_XSS_FILTER":
+			conf.Settings.SecureBrowserXSSFilter = convBool(v, "DD_SECURE_BROWSER_XSS_FILTER environmental variable was not a boolean.")
+		case "DD_SECURE_CONTENT_TYPE_NOSNIFF":
+			conf.Settings.SecureContentTypeNosniff = v
+		case "DD_SECURE_HSTS_INCLUDE_SUBDOMAINS":
+			conf.Settings.SecureHSTSIncludeSubdomains = convBool(v, "DD_SECURE_HSTS_INCLUDE_SUBDOMAINS environmental variable was not a boolean.")
+		case "DD_SECURE_HSTS_SECONDS":
+			conf.Settings.SecureHSTSSeconds = convInt(v, "DD_SECURE_HSTS_SECONDS provided via environmental variable isn't a valid number")
+		case "DD_SECURE_PROXY_SSL_HEADER":
+			conf.Settings.SecureProxySSLHeader = convBool(v, "DD_SECURE_PROXY_SSL_HEADER environmental variable was not a boolean.")
+		case "DD_SECURE_SSL_REDIRECT":
+			conf.Settings.SecureSSLRedirect = convBool(v, "DD_SECURE_SSL_REDIRECT environmental variable was not a boolean.")
+		case "DD_SESSION_COOKIE_HTTPONLY":
+			conf.Settings.SessionCookieHTTPOnly = convBool(v, "DD_SESSION_COOKIE_HTTPONLY environmental variable was not a boolean.")
+		case "DD_SESSION_COOKIE_SECURE":
+			conf.Settings.SessionCookieSecure = convBool(v, "DD_SESSION_COOKIE_SECURE environmental variable was not a boolean.")
+		case "DD_SITE_ID":
+			conf.Settings.SiteID = convInt(v, "DD_SITE_ID provided via environmental variable isn't a valid number")
+		case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_ENABLED":
+			conf.Settings.SocialAuthAzureadTenantOauth2Enabled = v
+		case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY":
+			conf.Settings.SocialAuthAzureadTenantOauth2Key = v
+		case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_RESOURCE":
+			conf.Settings.SocialAuthAzureadTenantOauth2Resource = v
+		case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET":
+			conf.Settings.SocialAuthAzureadTenantOauth2Secret = v
+		case "DD_SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID":
+			conf.Settings.SocialAuthAzureadTenantOauth2TenantID = v
+		case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_ENABLE":
+			conf.Settings.SocialAuthGoogleOauth2Enable = v
+		case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY":
+			conf.Settings.SocialAuthGoogleOauth2Key = v
+		case "DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET":
+			conf.Settings.SocialAuthGoogleOauth2Secret = v
+		case "DD_SOCIAL_AUTH_OKTA_OAUTH2_API_URL":
+			conf.Settings.SocialAuthOktaOauth2APIURL = v
+		case "DD_SOCIAL_AUTH_OKTA_OAUTH2_ENABLED":
+			conf.Settings.SocialAuthOktaOauth2Enabled = v
+		case "DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY":
+			conf.Settings.SocialAuthOktaOauth2Key = v
+		case "DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET":
+			conf.Settings.SocialAuthOktaOauth2Secret = v
+		case "DD_STATIC_ROOT":
+			conf.Settings.StaticRoot = v
+		case "DD_STATIC_URL":
+			conf.Settings.StaticURL = v
+		case "DD_TEAM_NAME":
+			conf.Settings.TeamName = v
+		case "DD_TEST_DATABASE_NAME":
+			conf.Settings.TestDatabaseName = v
+		case "DD_TEST_RUNNER":
+			conf.Settings.TestRunner = v
+		case "DD_TIME_ZONE":
+			conf.Settings.TimeZone = v
+		case "DD_TRACK_MIGRATIONS":
+			conf.Settings.TrackMigrations = convBool(v, "DD_TRACK_MIGRATIONS environmental variable was not a boolean.")
+		case "DD_URL_PREFIX":
+			conf.Settings.URLPrefix = v
+		case "DD_USE_I18N":
+			conf.Settings.UseI18N = convBool(v, "DD_USE_I18N environmental variable was not a boolean.")
+		case "DD_USE_L10N":
+			conf.Settings.UseL10N = convBool(v, "DD_USE_L10N environmental variable was not a boolean.")
+		case "DD_USE_TZ":
+			conf.Settings.UseTZ = convBool(v, "DD_USE_TZ environmental variable was not a boolean.")
+		case "DD_UUID":
+			conf.Settings.UUID = v
+		case "DD_UWSGI_ENDPOINT":
+			conf.Settings.UwsgiEndpoint = v
+		case "DD_UWSGI_HOST":
+			conf.Settings.UwsgiHost = v
+		case "DD_UWSGI_MODE":
+			conf.Settings.UwsgiMode = v
+		case "DD_UWSGI_PASS":
+			conf.Settings.UwsgiPass = v
+		case "DD_UWSGI_PORT":
+			conf.Settings.UwsgiPort = v
+		case "DD_WHITENOISE":
+			conf.Settings.Whitenoise = convBool(v, "DD_WHITENOISE environmental variable was not a boolean.")
+		case "DD_WKHTMLTOPDF":
+			conf.Settings.Wkhtmltopdf = v
+		case "DOJO_ADMIN_USER":
+			conf.Settings.DojoAdminUser = v
+			// TODO: Deprecate me
 		}
 	}
 
-	//fmt.Printf("Supported environmental variables are %+v", dojoEnvs)
+}
+
+func convInt(i string, s string) int {
+	convI, err := strconv.Atoi(i)
+	if err != nil {
+		fmt.Println("ERROR:")
+		fmt.Printf("  %s\n", s)
+		fmt.Printf("  Error was: %v\n", err)
+		os.Exit(1)
+	}
+	return convI
+}
+
+func intLessThan(i int, max int, s string) {
+	if i > max {
+		fmt.Println("ERROR:")
+		fmt.Printf("  %s\n", s)
+		os.Exit(1)
+	}
+}
+
+func convBool(b string, s string) bool {
+	res, err := strconv.ParseBool(b)
+	if err != nil {
+		fmt.Println("ERROR:")
+		fmt.Printf("  %s\n", s)
+		fmt.Println("  Valid values are 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.")
+		fmt.Printf("  Error was: %v\n", err)
+		os.Exit(1)
+	}
+	return res
 }

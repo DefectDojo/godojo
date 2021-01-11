@@ -156,25 +156,21 @@ func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error)
 }
 
 func inspectCmds(o io.Writer, c osCmds) ([]string, error) {
-	fmt.Println("Inside inspectCmds")
+	traceMsg("Inside inspectCmds")
 	ret := make([]string, 1)
 	// Cycle through the provided commands, trying them one at at time
 	for i := range c.cmds {
-		fmt.Println("Before command invoke")
-		fmt.Printf("current cmd: %+v\n", c.cmds[i])
+		traceMsg(fmt.Sprintf("Current cmd: %+v\n", c.cmds[i]))
 		out, err := inspectCmd(o,
 			c.cmds[i],
 			c.errmsg[i],
 			c.hard[i])
 
-		fmt.Println("After command invoke")
 		if err != nil {
 			traceMsg(fmt.Sprintf("Command %s errored with %s. Underlying error is %+v", c.cmds[i], c.errmsg[i], err))
 			return ret, errors.New(c.errmsg[i])
 		}
-		fmt.Println("Past the inspectCmd error check")
 		ret = append(ret, out)
-
 	}
 
 	return ret, nil

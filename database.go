@@ -1,15 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
 	"github.com/mtesauro/godojo/config"
 )
 
@@ -45,93 +42,109 @@ func installDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 	return
 }
 
-func startDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
+func startDB(osTar string, dbTar *config.DBTarget, dbCmd *osCmds) {
 	// Look at the dbTar and call function to install that DB target
 	switch dbTar.Engine {
 	case "SQLite":
-		// Generate commands to start SQLite
-		switch osTar {
-		case "ubuntu:18.04":
-			fallthrough
-		case "ubuntu:20.04":
-			fallthrough
-		case "ubuntu:20.10":
-			dCmd.id = osTar
-			dCmd.cmds = []string{
-				"echo 'Nothing to start for SQLite'",
-			}
-			dCmd.errmsg = []string{
-				"Starting SQLite should never error since there's nothing to start",
-			}
-			dCmd.hard = []bool{
-				true,
-			}
-		}
+		startSQLite(osTar, dbCmd)
 	case "MariaDB":
-		// Generate commands to start MariaDB
-		switch osTar {
-		case "ubuntu:18.04":
-			fallthrough
-		case "ubuntu:20.04":
-			fallthrough
-		case "ubuntu:20.10":
-			dCmd.id = osTar
-			// TODO: Propably time to convert this to systemctl calls
-			//       also consider enabling the service just in case
-			dCmd.cmds = []string{
-				"service mysql start",
-			}
-			dCmd.errmsg = []string{
-				"Unable to start MariaDB",
-			}
-			dCmd.hard = []bool{
-				true,
-			}
-		}
+		startMariaDB(osTar, dbCmd)
 	case "MySQL":
-		// Generate commands to start MySQL
-		switch osTar {
-		case "ubuntu:18.04":
-			fallthrough
-		case "ubuntu:20.04":
-			fallthrough
-		case "ubuntu:20.10":
-			dCmd.id = osTar
-			// TODO: Propably time to convert this to systemctl calls
-			//       also consider enabling the service just in case
-			dCmd.cmds = []string{
-				"service mysql start",
-			}
-			dCmd.errmsg = []string{
-				"Unable to start MySQL",
-			}
-			dCmd.hard = []bool{
-				true,
-			}
-		}
+		startMySQL(osTar, dbCmd)
 	case "PostgreSQL":
-		// Generate commands to start PostgreSQL
-		switch osTar {
-		case "ubuntu:18.04":
-			fallthrough
-		case "ubuntu:20.04":
-			fallthrough
-		case "ubuntu:20.10":
-			dCmd.id = osTar
-			// TODO: Propably time to convert this to systemctl calls
-			//       also consider enabling the service just in case
-			dCmd.cmds = []string{
-				"service postgresql start",
-			}
-			dCmd.errmsg = []string{
-				"Unable to start PostgreSQL",
-			}
-			dCmd.hard = []bool{
-				true,
-			}
-		}
+		startPostgres(osTar, dbCmd)
 	}
 	return
+}
+
+func startSQLite(osTar string, dbCmd *osCmds) {
+	// Generate commands to start SQLite
+	switch osTar {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		dbCmd.id = osTar
+		dbCmd.cmds = []string{
+			"echo 'Nothing to start for SQLite'",
+		}
+		dbCmd.errmsg = []string{
+			"Starting SQLite should never error since there's nothing to start",
+		}
+		dbCmd.hard = []bool{
+			true,
+		}
+	}
+}
+
+func startMariaDB(osTar string, dbCmd *osCmds) {
+	// Generate commands to start MariaDB
+	switch osTar {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		dbCmd.id = osTar
+		// TODO: Propably time to convert this to systemctl calls
+		//       also consider enabling the service just in case
+		dbCmd.cmds = []string{
+			"service mysql start",
+		}
+		dbCmd.errmsg = []string{
+			"Unable to start MariaDB",
+		}
+		dbCmd.hard = []bool{
+			true,
+		}
+	}
+}
+
+func startMySQL(osTar string, dbCmd *osCmds) {
+	// Generate commands to start MySQL
+	switch osTar {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		dbCmd.id = osTar
+		// TODO: Propably time to convert this to systemctl calls
+		//       also consider enabling the service just in case
+		dbCmd.cmds = []string{
+			"service mysql start",
+		}
+		dbCmd.errmsg = []string{
+			"Unable to start MySQL",
+		}
+		dbCmd.hard = []bool{
+			true,
+		}
+	}
+}
+
+func startPostgres(osTar string, dbCmd *osCmds) {
+	// Generate commands to start PostgreSQL
+	switch osTar {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		dbCmd.id = osTar
+		// TODO: Propably time to convert this to systemctl calls
+		//       also consider enabling the service just in case
+		dbCmd.cmds = []string{
+			"service postgresql start",
+		}
+		dbCmd.errmsg = []string{
+			"Unable to start PostgreSQL",
+		}
+		dbCmd.hard = []bool{
+			true,
+		}
+	}
 }
 
 func dbPrep(osTar string, dbTar *config.DBTarget) error {
@@ -179,6 +192,15 @@ func prepMariaDB(dbTar *config.DBTarget, os string) error {
 	return errors.New("Not implemented yet")
 }
 
+// Setup a struct to use for DB commands
+type sqlStr struct {
+	os     string
+	sql    string
+	errMsg string
+	creds  map[string]string
+	kind   string
+}
+
 func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	// TODO: Path check any binaries called
 	//       * mysqladmin
@@ -198,19 +220,15 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	traceMsg(fmt.Sprintf("DB Creds are now %s / %s", creds["user"], creds["pass"]))
 
 	statusMsg("Validating DB connection")
-	// TODO: Convert this and the below calls to a function
 	// Check connectivity to DB
-	DBCmds := osCmds{
-		id: osTar,
-		cmds: []string{"mysqladmin --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" processlist"},
-		errmsg: []string{"Unable to connect to the configured MySQL database"},
-		hard:   []bool{false},
+	conCk := sqlStr{
+		os:     osTar,
+		sql:    "SHOW PROCESSLIST;",
+		errMsg: "Unable to connect to the configured MySQL database",
+		creds:  creds,
+		kind:   "try",
 	}
-	err := tryCmds(cmdLogger, DBCmds)
+	_, err := runMySQLCmd(dbTar, conCk)
 	if err != nil {
 		traceMsg("validation of connection to MySQL failed")
 		return err
@@ -222,26 +240,25 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		// TODO: Convert this and the above call to a function
 		// Query MySQL to see if the configured database name exists already
 		// Another option is "show databases like '" + dbTar.Name + "';"
-		sql := "SELECT count(SCHEMA_NAME) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" + dbTar.Name + "';"
-		DBCk := osCmds{
-			id: osTar,
-			cmds: []string{"mysql --host=" + dbTar.Host +
-				" --user=" + creds["user"] +
-				" --port=" + strconv.Itoa(dbTar.Port) +
-				" --password=" + creds["pass"] +
-				" --execute=\"" + sql + "\""},
-			errmsg: []string{"Unable to connect to the configured MySQL database"},
-			hard:   []bool{false},
+		dbCk := sqlStr{
+			os:     osTar,
+			sql:    "SELECT count(SCHEMA_NAME) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" + dbTar.Name + "';",
+			errMsg: "Unable to check for existing DefectDojo MySQL database",
+			creds:  creds,
+			kind:   "inspect",
 		}
-		out, err := inspectCmd(cmdLogger, DBCk.cmds[0], DBCk.errmsg[0], DBCk.hard[0])
+		out, err := runMySQLCmd(dbTar, dbCk)
 		if err != nil {
-			traceMsg("validation of connection to MySQL failed")
-			return err
+			traceMsg("Check for existing DefectDojo MySQL database failed")
+			fmt.Println("Drop database set to true but no database found, continuing")
+			//return err
 		}
+
 		// Clean up stdout from inspectCmd output
+		strOut := squishSlice(out)
 		resp := strings.Trim(
 			strings.ReplaceAll(
-				strings.ReplaceAll(out, "count(SCHEMA_NAME)", ""), "\n", ""), " ")
+				strings.ReplaceAll(strOut, "count(SCHEMA_NAME)", ""), "\n", ""), " ")
 
 		// Check if there's an existing DB
 		// if resp = 0 then DB doesn't exist
@@ -253,20 +270,14 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		}
 		if ck == 1 {
 			traceMsg("DB EXISTS so droping that sucker")
-			sql := "DROP DATABASE " + dbTar.Name + ";"
-			traceMsg(fmt.Sprintf("%+v\n", sql))
-			// TODO: Convert this and the above call to a function
-			DropDB := osCmds{
-				id: osTar,
-				cmds: []string{"mysql --host=" + dbTar.Host +
-					" --user=" + creds["user"] +
-					" --port=" + strconv.Itoa(dbTar.Port) +
-					" --password=" + creds["pass"] +
-					" --execute=\"" + sql + "\""},
-				errmsg: []string{"Unable to drop the existing MySQL database"},
-				hard:   []bool{false},
+			dropDB := sqlStr{
+				os:     osTar,
+				sql:    "DROP DATABASE " + dbTar.Name + ";",
+				errMsg: "Unable to drop the existing MySQL database",
+				creds:  creds,
+				kind:   "try",
 			}
-			err := tryCmd(cmdLogger, DropDB.cmds[0], DropDB.errmsg[0], DropDB.hard[0])
+			_, err := runMySQLCmd(dbTar, dropDB)
 			if err != nil {
 				traceMsg("Failed to drop existing database per configured option to drop existing")
 				return err
@@ -277,50 +288,37 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	}
 
 	// Create the DefectDojo database if it doesn't already exist
-	sql := "CREATE DATABASE IF NOT EXISTS " + dbTar.Name + "  CHARACTER SET UTF8;"
-	traceMsg(fmt.Sprintf("%+v\n", sql))
-	// TODO: Convert this and the above call to a function
-	CreateDB := osCmds{
-		id: osTar,
-		cmds: []string{"mysql --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" --execute=\"" + sql + "\""},
-		errmsg: []string{"Unable to create a new MySQL database for DefectDojo"},
-		hard:   []bool{false},
+	traceMsg("Creating database for DefectDojo on MySQL")
+	createDB := sqlStr{
+		os:     osTar,
+		sql:    "CREATE DATABASE IF NOT EXISTS " + dbTar.Name + "  CHARACTER SET UTF8;",
+		errMsg: "Unable to create a new MySQL database for DefectDojo",
+		creds:  creds,
+		kind:   "try",
 	}
-	err = tryCmd(cmdLogger, CreateDB.cmds[0], CreateDB.errmsg[0], CreateDB.hard[0])
+	_, err = runMySQLCmd(dbTar, createDB)
 	if err != nil {
 		traceMsg("Failed to create new database for DefectDojo to use")
 		return err
 	}
 
 	// Drop user DefectDojo uses to connect to the database
-	sql = "DROP USER '" + dbTar.User + "'@'localhost';DROP USER '" + dbTar.User + "'@'%';"
-	traceMsg(fmt.Sprintf("%+v\n", sql))
-	// TODO: Convert this and the above call to a function
-	dropUsr := osCmds{
-		id: osTar,
-		cmds: []string{"mysql --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" --execute=\"" + sql + "\""},
-		errmsg: []string{"Unable to delete existing database user for DefectDojo or one didn't exist"},
-		hard:   []bool{false},
+	traceMsg("Dropping existing DefectDojo MySQL DB user, if any")
+	dropUsr := sqlStr{
+		os:     osTar,
+		sql:    "DROP USER '" + dbTar.User + "'@'localhost';DROP USER '" + dbTar.User + "'@'%';",
+		errMsg: "Unable to delete existing database user for DefectDojo or one didn't exist",
+		creds:  creds,
+		kind:   "inspect",
 	}
-	s, err := inspectCmd(cmdLogger, dropUsr.cmds[0], dropUsr.errmsg[0], dropUsr.hard[0])
+	out, err := runMySQLCmd(dbTar, dropUsr)
 	if err != nil {
 		// No reason to return the error as this is expected for most cases
 		// and create user will error out for edge cases
 		traceMsg("Unable to delete existing database user for DefectDojo or one didn't exist")
-		traceMsg(fmt.Sprintf("SQL DROP command output was %+v (in any)", s))
+		traceMsg(fmt.Sprintf("SQL DROP command output was %+v (in any)", squishSlice(out)))
 		traceMsg("Continuing after error deleting user, non-fatal error")
 	}
-
-	// If Drop DB, first delete any existing DD user
-	// TODO: ^
 
 	// First set the appropriate host for the DefectDojo user to connect from
 	usrHost := "localhost"
@@ -329,60 +327,45 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 		usrHost = "%"
 	}
 	// Create user for DefectDojo to use to connect to the database
-	sql = "CREATE USER '" + dbTar.User + "'@'" + usrHost + "' IDENTIFIED BY '" + dbTar.Pass + "';"
-	traceMsg(fmt.Sprintf("%+v\n", sql))
-	// TODO: Convert this and the above call to a function
-	CreateUsr := osCmds{
-		id: osTar,
-		cmds: []string{"mysql --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" --execute=\"" + sql + "\""},
-		errmsg: []string{"Unable to create a MySQL database user for DefectDojo"},
-		hard:   []bool{false},
+	traceMsg("Creating MySQL DB user for DefectDojo")
+	createUsr := sqlStr{
+		os:     osTar,
+		sql:    "CREATE USER '" + dbTar.User + "'@'" + usrHost + "' IDENTIFIED BY '" + dbTar.Pass + "';",
+		errMsg: "Unable to create a MySQL database user for DefectDojo",
+		creds:  creds,
+		kind:   "try",
 	}
-	err = tryCmd(cmdLogger, CreateUsr.cmds[0], CreateUsr.errmsg[0], CreateUsr.hard[0])
+	_, err = runMySQLCmd(dbTar, createUsr)
 	if err != nil {
 		traceMsg("Failed to create database user for DefectDojo")
 		return err
 	}
 
 	// Grant the DefectDojo db user the necessary privileges
-	sql = "GRANT ALL PRIVILEGES ON " + dbTar.Name + ".* TO '" + dbTar.User + "'@'" + dbTar.Host + "';"
-	traceMsg(fmt.Sprintf("%+v\n", sql))
-	// TODO: Convert this and the above call to a function
-	grantPrivs := osCmds{
-		id: osTar,
-		cmds: []string{"mysql --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" --execute=\"" + sql + "\""},
-		errmsg: []string{"Unable to grant needed privileges to database user for DefectDojo"},
-		hard:   []bool{false},
+	traceMsg("Granting privileges to DefectDojo MySQL DB user")
+	grantPrivs := sqlStr{
+		os:     osTar,
+		sql:    "GRANT ALL PRIVILEGES ON " + dbTar.Name + ".* TO '" + dbTar.User + "'@'" + dbTar.Host + "';",
+		errMsg: "Unable to grant needed privileges to database user for DefectDojo",
+		creds:  creds,
+		kind:   "try",
 	}
-	err = tryCmd(cmdLogger, grantPrivs.cmds[0], grantPrivs.errmsg[0], grantPrivs.hard[0])
+	_, err = runMySQLCmd(dbTar, grantPrivs)
 	if err != nil {
 		traceMsg("Failed to create database user for DefectDojo")
 		return err
 	}
 
 	// Flush privileges to finalize changes to db
-	sql = "FLUSH PRIVILEGES;"
-	traceMsg(fmt.Sprintf("%+v\n", sql))
-	// TODO: Convert this and the above call to a function
-	flushPrivs := osCmds{
-		id: osTar,
-		cmds: []string{"mysql --host=" + dbTar.Host +
-			" --user=" + creds["user"] +
-			" --port=" + strconv.Itoa(dbTar.Port) +
-			" --password=" + creds["pass"] +
-			" --execute=\"" + sql + "\""},
-		errmsg: []string{"Unable to flush database privileges"},
-		hard:   []bool{false},
+	traceMsg("Flushing privileges for DefectDojo MySQL DB user")
+	flushPrivs := sqlStr{
+		os:     osTar,
+		sql:    "FLUSH PRIVILEGES;",
+		errMsg: "Unable to flush database privileges",
+		creds:  creds,
+		kind:   "try",
 	}
-	err = tryCmd(cmdLogger, flushPrivs.cmds[0], flushPrivs.errmsg[0], flushPrivs.hard[0])
+	_, err = runMySQLCmd(dbTar, flushPrivs)
 	if err != nil {
 		traceMsg("Failed to create database user for DefectDojo")
 		return err
@@ -391,17 +374,61 @@ func prepMySQL(dbTar *config.DBTarget, osTar string) error {
 	return nil
 }
 
+func runMySQLCmd(dbTar *config.DBTarget, c sqlStr) ([]string, error) {
+	out := make([]string, 1)
+	traceMsg(fmt.Sprintf("MySQL query: %s", c.sql))
+	DBCmds := osCmds{
+		id: c.os,
+		cmds: []string{"mysql --host=" + dbTar.Host +
+			" --user=" + c.creds["user"] +
+			" --port=" + strconv.Itoa(dbTar.Port) +
+			" --password=" + c.creds["pass"] +
+			" --execute=\"" + c.sql + "\""},
+		errmsg: []string{c.errMsg},
+		hard:   []bool{false},
+	}
+
+	// Swicht on how to run the command aka runCmds, tryCmds, inspectCmds
+	err := errors.New("")
+	switch c.kind {
+	case "try":
+		err = tryCmds(cmdLogger, DBCmds)
+	case "inspect":
+		out, err = inspectCmds(cmdLogger, DBCmds)
+	default:
+		traceMsg("Invalid 'kind' sent to runMySQLCmd, bug in godojo")
+		fmt.Println("Bug discovered in godojo, see trace message. Quitting.")
+		os.Exit(1)
+	}
+
+	// Handle errors from running the MySQL command
+	if err != nil {
+		traceMsg(fmt.Sprintf("Error running MySQL command - %s", c.sql))
+		return out, err
+	}
+
+	return out, nil
+}
+
+func squishSlice(sl []string) string {
+	str := ""
+	for i := 0; i < len(sl); i++ {
+		str += sl[i]
+	}
+	return str
+}
+
 func prepPostgreSQL(dbTar *config.DBTarget, os string) error {
 	// Open a connection to the configured PostgreSQL database
 	// https://godoc.org/github.com/lib/pq
-	conn := "user=" + dbTar.User + " password=" + dbTar.Pass + " host=" + dbTar.Host + " port=" + strconv.Itoa(dbTar.Port)
-	fmt.Println("DB conn is ", conn)
+	//conn := "user=" + dbTar.User + " password=" + dbTar.Pass + " host=" + dbTar.Host + " port=" + strconv.Itoa(dbTar.Port)
+	//fmt.Println("DB conn is ", conn)
 
-	dbPostgreSQL, err := sql.Open("postgres", conn)
-	if err != nil {
-		return err
-	}
+	//dbPostgreSQL, err := sql.Open("postgres", conn)
+	//if err != nil {
+	//	return err
+	//}
 
-	fmt.Println(dbPostgreSQL)
+	//fmt.Println(dbPostgreSQL)
 	return nil
 }
