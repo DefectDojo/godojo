@@ -160,7 +160,7 @@ func inspectCmds(o io.Writer, c osCmds) ([]string, error) {
 	ret := make([]string, 1)
 	// Cycle through the provided commands, trying them one at at time
 	for i := range c.cmds {
-		traceMsg(fmt.Sprintf("Current cmd: %+v\n", c.cmds[i]))
+		traceMsg(fmt.Sprintf("Current cmd: %+v", c.cmds[i]))
 		out, err := inspectCmd(o,
 			c.cmds[i],
 			c.errmsg[i],
@@ -175,3 +175,5 @@ func inspectCmds(o io.Writer, c osCmds) ([]string, error) {
 
 	return ret, nil
 }
+
+// TODO: Write a version of impsectCmds that returns the exit code in addition to combined stderr & stdout to caller

@@ -71,7 +71,7 @@ func instPostgreSQL(id string, b *osCmds) {
 	return
 }
 
-func defaultDBCreds(db string, os string) map[string]string {
+func defaultDBCreds(db *config.DBTarget, os string) map[string]string {
 	// Setup a map to return
 	creds := map[string]string{"user": "foo", "pass": "bar"}
 
