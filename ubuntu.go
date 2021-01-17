@@ -137,12 +137,17 @@ func ubuntuInstPostgreSQL(id string, b *osCmds) {
 }
 
 // Determine the default creds for a database freshly installed in Ubuntu
-func ubuntuDefaultDBCreds(db string, creds map[string]string) {
+func ubuntuDefaultDBCreds(db *config.DBTarget, creds map[string]string) {
 	// Installer currently assumes the default DB passwrod handling won't change by release
 	// Switch on the DB type
-	switch db {
+	switch db.Engine {
 	case "MySQL":
 		ubuntuDefaultMySQL(creds)
+	case "PostgreSQL":
+		// Set creds as the Ruser & Rpass for Postgres
+		creds["user"] = db.Ruser
+		creds["pass"] = db.Rpass
+		ubuntuDefaultPgSQL(creds)
 	}
 
 	return
@@ -183,6 +188,32 @@ func ubuntuDefaultMySQL(c map[string]string) {
 		os.Exit(1)
 	}
 
+}
+
+func ubuntuDefaultPgSQL(creds map[string]string) {
+	traceMsg("Called ubuntuDefaultPgSQL")
+
+	// Sent user to postgres as that's the default DB user for any new install
+	creds["user"] = "postgres"
+
+	// Use the default local OS user to set the postgres DB user
+	pgAlter := osCmds{
+		id:     "linux",
+		cmds:   []string{"sudo -u postgres psql -c \"ALTER USER postgres with encrypted password '" + creds["pass"] + "';\""},
+		errmsg: []string{"Unable to set initial password for PostgreSQL database user postgres"},
+		hard:   []bool{false},
+	}
+
+	// Try command
+	err := tryCmds(cmdLogger, pgAlter)
+	if err != nil {
+		traceMsg(fmt.Sprintf("Error updating PostgreSQL DB user with %+v", squishSlice(pgAlter.cmds)))
+		errorMsg("Unable to update default PostgreSQL DB user, quitting")
+		os.Exit(1)
+	}
+
+	traceMsg("No error return from ubuntuDefaultPgSQL")
+	return
 }
 
 func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
