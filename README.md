@@ -37,11 +37,11 @@ You can see all the configuration options with descriptions in the [example conf
 * Installer is run as root or with sudo like:
 
 ```
-$ sudo godojo
+$ sudo ./godojo
 ```
 or
 ```
-# godojo
+# ./godojo
 ```
 
 * Installer can create a 'logs' directory where the installer is run to write a log of the install
@@ -51,9 +51,9 @@ or
 
 ### Other benefits of godojo
 
-* The same installer can installer multiple versions of DefectDojo
+* The same installer can install multiple versions of DefectDojo
 * Supports both MySQL and PostgreSQL databases
-* Supports creating a new database or using an existing database
+* Supports creating a new database or using an existing database. Database can be local (same host) or remote.
 * godojo doesn't care where it is run from - the only important location is where DefectDojo will be installed which defaults to /opt/dojo
 * godojo creates logs in a 'logs' subdirectory in the directory where it is run.
   * Logs are configurable from none ("Quiet: true" in dojoConfig.yml) to trace ("Trace: true" in dojoConfig.yml)
