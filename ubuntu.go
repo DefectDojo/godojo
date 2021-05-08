@@ -136,6 +136,33 @@ func ubuntuInstPostgreSQL(id string, b *osCmds) {
 	return
 }
 
+func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
+	switch id {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		b.id = id
+		b.cmds = []string{
+			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
+			"groupadd -f postgres",
+			"useradd -s /bin/bash -m -g postgres postgres",
+		}
+		b.errmsg = []string{
+			"Unable to install PostgreSQL client",
+			"Unable to add postgres group",
+			"Unable to add postgres user",
+		}
+		b.hard = []bool{
+			true,
+			true,
+			true,
+		}
+	}
+	return
+}
+
 // Determine the default creds for a database freshly installed in Ubuntu
 func ubuntuDefaultDBCreds(db *config.DBTarget, creds map[string]string) {
 	// Installer currently assumes the default DB passwrod handling won't change by release

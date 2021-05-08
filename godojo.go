@@ -81,7 +81,7 @@ func dojoBanner() {
 	fmt.Println("                                               /___/         ")
 	fmt.Println("    version ", ver)
 	fmt.Println("")
-	fmt.Println("  Welcome to goDojo, the official way to install DefectDojo.")
+	fmt.Println("  Welcome to godojo, the official way to install DefectDojo.")
 	fmt.Println("  For more information on how goDojo does an install, see:")
 	fmt.Printf("  %s", HelpURL)
 	fmt.Println("")
@@ -157,6 +157,19 @@ func getDojoRelease(i *config.InstallConfig) error {
 	traceMsg(fmt.Sprintf("Relese download list is %+v", dwnURL))
 	traceMsg(fmt.Sprintf("File path to write tarball is %+v", tarball))
 
+	// Check for existing tarball before downloading, might be a re-run of godojo
+	_, err = os.Stat(tarball)
+	if err == nil {
+		// File already downloaded so return early
+		err = extractRelease(tarball, i)
+		if err != nil {
+			return err
+		}
+		s.Stop()
+		statusMsg("Tarball already downloaded and extracted the DefectDojo release file")
+		return nil
+	}
+
 	// Setup a custom http client for downloading the Dojo release
 	var ddClient = &http.Client{
 		// Set time to a max of 20 seconds
@@ -202,8 +215,42 @@ func getDojoRelease(i *config.InstallConfig) error {
 	}
 
 	// Extract the tarball to create the Dojo source directory
+	err = extractRelease(tarball, i)
+	if err != nil {
+		return err
+	}
+	//traceMsg("Extracting tarball into the Dojo source directory")
+	//tb, err := os.Open(tarball)
+	//if err != nil {
+	//	traceMsg(fmt.Sprintf("Error openging tarball was: %+v", err))
+	//	return err
+	//}
+	//err = Untar(i.Root, tb)
+	//if err != nil {
+	//	traceMsg(fmt.Sprintf("Error extracting tarball was: %+v", err))
+	//	return err
+	//}
+
+	//// Remane source directory to the non-versioned name
+	//traceMsg("Renaming source directory to the non-versioned name")
+	//oldPath := filepath.Join(i.Root, "django-DefectDojo-"+i.Version)
+	//newPath := filepath.Join(i.Root, i.Source)
+	//err = os.Rename(oldPath, newPath)
+	//if err != nil {
+	//	traceMsg(fmt.Sprintf("Error renaming Dojo source directory was: %+v", err))
+	//	return err
+	//}
+
+	// Successfully extracted the file, return nil
+	s.Stop()
+	statusMsg("Successfully downloaded and extracted the DefectDojo release file")
+	return nil
+}
+
+func extractRelease(t string, i *config.InstallConfig) error {
+	// Extract the tarball to create the Dojo source directory
 	traceMsg("Extracting tarball into the Dojo source directory")
-	tb, err := os.Open(tarball)
+	tb, err := os.Open(t)
 	if err != nil {
 		traceMsg(fmt.Sprintf("Error openging tarball was: %+v", err))
 		return err
@@ -223,10 +270,6 @@ func getDojoRelease(i *config.InstallConfig) error {
 		traceMsg(fmt.Sprintf("Error renaming Dojo source directory was: %+v", err))
 		return err
 	}
-
-	// Successfully extracted the file, return nil
-	s.Stop()
-	statusMsg("Successfully downloaded and extracted the DefectDojo release file")
 	return nil
 }
 
@@ -599,6 +642,27 @@ func main() {
 		}
 		Spin.Stop()
 		statusMsg("Installing Database complete")
+	}
+
+	// Install DB clients for remote DBs
+	if !conf.Install.DB.Local {
+		// Setup commands for DB clients
+		dbClient := osCmds{}
+		dbConf := &conf.Install.DB
+		installDBClient(target.id, dbConf, &dbClient)
+
+		// Run the commands to install the chosen DB
+		Spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
+		Spin.Prefix = "Installing " + conf.Install.DB.Engine + " database client for DefectDojo..."
+		Spin.Start()
+		for i := range dbClient.cmds {
+			sendCmd(cmdLogger,
+				dbClient.cmds[i],
+				dbClient.errmsg[i],
+				dbClient.hard[i])
+		}
+		Spin.Stop()
+		statusMsg("Installing Database client complete")
 
 	}
 

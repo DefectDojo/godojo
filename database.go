@@ -43,6 +43,32 @@ func installDB(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 	return
 }
 
+func installDBClient(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
+	// Look at the dbTar and call function to install that DB target
+	switch dbTar.Engine {
+	case "SQLite":
+		// Generate commands to install SQLite
+		// A remote SQLite DB makes no sense
+		// TODO: Log this error
+		return
+	case "MariaDB":
+		// Generate commands to install MariaDB
+		// TODO: Write install for MariaDB client
+		//instMariaDBClient(osTar, dCmd)
+		return
+	case "MySQL":
+		// Generate commands to install MySQL
+		// TODO: Write install for MySQL client
+		//instMySQLClient(osTar, dCmd)
+		return
+	case "PostgreSQL":
+		// Generate commands to install PostgreSQL
+		instPostgreSQLClient(osTar, dCmd)
+	}
+	return
+}
+
+
 func startDB(osTar string, dbTar *config.DBTarget, dbCmd *osCmds) {
 	// Look at the dbTar and call function to install that DB target
 	switch dbTar.Engine {

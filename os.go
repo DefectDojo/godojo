@@ -71,6 +71,19 @@ func instPostgreSQL(id string, b *osCmds) {
 	return
 }
 
+func instPostgreSQLClient(id string, b *osCmds) {
+	switch id {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		ubuntuInstPostgreSQLClient(id, b)
+	}
+	return
+}
+
+
 func defaultDBCreds(db *config.DBTarget, os string) map[string]string {
 	// Setup a map to return
 	creds := map[string]string{"user": "foo", "pass": "bar"}
