@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -136,6 +138,33 @@ func ubuntuInstPostgreSQL(id string, b *osCmds) {
 	return
 }
 
+func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
+	switch id {
+	case "ubuntu:18.04":
+		fallthrough
+	case "ubuntu:20.04":
+		fallthrough
+	case "ubuntu:20.10":
+		b.id = id
+		b.cmds = []string{
+			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
+			"groupadd -f postgres",
+			"useradd -s /bin/bash -m -g postgres postgres",
+		}
+		b.errmsg = []string{
+			"Unable to install PostgreSQL client",
+			"Unable to add postgres group",
+			"Unable to add postgres user",
+		}
+		b.hard = []bool{
+			true,
+			true,
+			true,
+		}
+	}
+	return
+}
+
 // Determine the default creds for a database freshly installed in Ubuntu
 func ubuntuDefaultDBCreds(db *config.DBTarget, creds map[string]string) {
 	// Installer currently assumes the default DB passwrod handling won't change by release
@@ -258,6 +287,10 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 }
 
 func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
+	// Setup expect script needed to set initial admin password
+	traceMsg(fmt.Sprintf("Injecting file %s at %s", "setup-superuser.expect", inst.Root+"/django-DefectDojo"))
+	_ = injectFile("setup-superuser.expect", inst.Root+"/django-DefectDojo", 0755)
+
 	// Django installs - migrations, create Django superuser
 	switch id {
 	case "ubuntu:18.04":
@@ -273,7 +306,7 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\"" +
 				inst.Admin.User + "\" --email=\"" + inst.Admin.Email + "\"",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && " +
-				inst.Root + "/django-DefectDojo/setup/scripts/common/setup-superuser.expect " + inst.Admin.User + " " + inst.Admin.Pass,
+				inst.Root + "/django-DefectDojo/setup-superuser.expect " + inst.Admin.User + " " + inst.Admin.Pass,
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
@@ -343,4 +376,22 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	}
 
 	return
+}
+
+func injectFile(n string, p string, mask fs.FileMode) error {
+	loc := emdir + "setup-superuser.expect"
+	d, err := Asset(loc)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(p+"/"+n, d, mask)
+	if err != nil {
+		// File can't be written
+		return err
+	}
+
+	traceMsg(fmt.Sprintf("Wrote file %s at %s", n, p))
+
+	return nil
 }

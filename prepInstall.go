@@ -83,7 +83,10 @@ func readConfigFile() {
 // overrides any options set in the configuration file. These variables
 // are used to supply either install-time configurations or provide values
 // that are used in DefectDojo's settings.py configuration file
-func readEnvVars() { // Env variables pulled from repo Add newly supported env vars below and to the case statement below after "if match {"
+func readEnvVars() {
+	// Env variables pulled from repo. Add newly supported env vars below and
+	// to the switch statement below after the for that ranges over overrides
+	// TODO: Add non-setting.py ENV vars like DD_SourcCommit
 	dojoEnvs := map[string]bool{
 		"DD_ADMIN_FIRST_NAME":                            true,
 		"DD_ADMIN_LAST_NAME":                             true,

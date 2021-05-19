@@ -14,7 +14,7 @@
 # SecretKey
 
 Install:
-  Version: "1.7.1" # DD_Version - Release version of DefectDojo from Github Releases
+  Version: "1.15.0" # DD_Version - Release version of DefectDojo from Github Releases
   SourceInstall: false # DD_SourceInstall - Boolean if a source install is desired (vs a release)
   # If ^ is true, a souce code install will occur overriding the release version provided
   SourceBranch: "dev" # DD_SourceBranch - The branch's HEAD to be checked out if SourceInstall is true
@@ -24,29 +24,29 @@ Install:
   Redact: true # DD_Redact - Boolean to redact sensitive info from the logs
   DevInstall: false # DD_Dev_Install - Boolean for development installs, uses fixed values
   Prompt: false # DD_Prompt - Boolean to prompt for configuration values - NOT IMPLEMENTED YET
-  Mac: false # DD_Mac - Boolean to set the install target as a Mac - NOT IMPLEMENTED YET
+  Mac: false # DD_Mac - Boolean to set the install target as a Mac - NOT IMPLEMENTED YET - use docker-compose instead
   Root: "/opt/dojo" # DD_Root - Root directory for the DefectDojo app Note: No traiing /
-  Source: "django-DefectDojo" # DD_Source - Directory in DD_Root for DefectDojo source code
+  Source: "django-DefectDojo" # DD_Source - Directory in DD_Root for DefectDojo source code Note: No /'s just the name
   Files: "local" # DD_Files - Directory in DD_Root for local files (static assets, uploads, etc)
   Media: "media" # DD_Media - Directory in DD_Files for uploaded files (screenshots, test artifacts, etc)
   Static: "static" # DD_Static - Directory in DD_Files for static asset files (JS, images, etc)
   App: "dojo" # DD_App - Directory in DD_Source where the DefectDojo Django app is located
-  Sampledata: false # DD_Sampledata - Boolean for installing sample data during the install
+  Sampledata: false # DD_Sampledata - Boolean for installing sample data during the install - NOT IMPLEMENTED YET
   PullSource: true # DD_PullSource - Boolean for installer to download source for DefectDojo Note: Usually for debugging the installer itself
   DB:
-    Engine: "MySQL" # DD_DB_Engine - Database engine to use (SQLite, MySQL, PostgreSQL, MariaDB) Note: CASE sEnSiTiVE!
+    Engine: "PostgreSQL" # DD_DB_Engine - Database engine to use (SQLite, MySQL, PostgreSQL, MariaDB) Note: CASE sEnSiTiVE!
     Local: true # DD_DB_Local - Boolean for when DB is on the same host/server/vm (local)
     Exists: false # DD_DB_Exists - Boolean for when DB for DefectDojo already exists so no install needed
-    Ruser: "root" # DD_DB_Ruser - Superuser for the database Note: this and Rpass below REQUIRED for remote and existing DBs
-    Rpass: "vee0Thoanae1daePooz0ieka" # DD_DB_Rpass - Password for the database superuser Note: set to 24 random characters
+    Ruser: "postgres" # DD_DB_Ruser - Superuser for the database, root for MySQL/MaraiDB & posgres for PostgreSQL. Note: this and Rpass below REQUIRED for remote and existing DBs
+    Rpass: "vee0Thoanae1daePooz0ieka" # DD_DB_Rpass - Password for the database superuser TODO: Note: set to 24 random characters if left blank
     Name: "dojodb" # DD_DB_Name - Name of the database that DefectDojo will use
     User: "dojodbusr" # DD_DB_User - Username of the database user that DefectDojo will use
     Pass: "vee0Thoanae1daePooz0ieka" # DD_DB_Pass - Password for the database user DefectDojo will use Note: set to 24 random characters
     Host: "localhost" # DD_DB_Host - Database hostname
-    Port: 3306 # DD_DB_Port - Port the database is listening on
+    Port: 5432 # DD_DB_Port - Port the database is listening on - 3306 for MySQL/MariaDB and 5432 for PostgreSQL
     Drop: false # DD_DB_Drop - Boolean to tell the installer to drop an existing DB if found
   OS:
-    User: "dojo-srv" # DD_OS_User - OS user to own the DefectDojo instll and files
+    User: "dojosrv" # DD_OS_User - OS user to own the DefectDojo instll and files
     Pass: "wahlieboojoKa8aitheibai3" # DD_OS_Pass - Password for the OS user for DefectDojo Note: set to 24 random characters
     Group: "dojo-srv" # DD_OS_Group - OS Group to own the DefectDojo install and files
     UID: 1337 # DD_OS_UID - User ID for the DefectDojo OS user
@@ -57,7 +57,7 @@ Install:
     Env: "/dojo/settings/.env.prod" # DD_SET_Env - Path to DefectDojo's environmental variables file
   Admin:
     User: "admin" # DD_ADMIN_User - Admin user for the DefectDojo web app
-    Pass: "admin" # DD_ADMIN_Pass - Password for the DefectDojo web app admin user Note: set to 24 random characters
+    Pass: "ddadmin" # DD_ADMIN_Pass - Password for the DefectDojo web app admin user Note: set to 24 random characters
     Email: "admin@localhost" # DD_ADMIN_Email - Email address for the web app admin user
     First: "Default" # DD_ADMIN_First - Web app admin users's first name
     Last: "Admin" # DD_ADMIN_Last - Web app admin users's last name
@@ -154,14 +154,14 @@ Settings:
 # These are optional config values that generally never need to be changed and are used while testing godojo
 # rather then actual installs
 Options:
-  HelpURL: "https://github.com/mtesauro/godojo" # DD_
-  ReleaseURL: "https://github.com/DefectDojo/django-DefectDojo/archive/" # DD_
-  CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" # DD_
-  YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" # DD_
-  YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" # DD_
-  NodeURL: "https://deb.nodesource.com/setup_12.x" # DD_
-  Embd: false
-  Key: ""
-  Tmpdir: "/opt/.dojo-temp/"
-  UsrInst: true
+  HelpURL: "https://github.com/defectdojo/godojo" #
+  ReleaseURL: "https://github.com/DefectDojo/django-DefectDojo/archive/" #
+  CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" #
+  YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" #
+  YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" #
+  NodeURL: "https://deb.nodesource.com/setup_12.x" #
+  Embd: false #
+  Key: "" #
+  Tmpdir: "/opt/.dojo-temp/" #
+  UsrInst: false #
 
