@@ -138,8 +138,8 @@ func createSettingsPy(id string, inst *config.DojoConfig, cmds *osCmds) {
 	// Create a settings.py for Dojo to use
 	cmds.id = id
 	cmds.cmds = []string{
-		"cp " + inst.Install.Root + "/django-DefectDojo/dojo/settings/settings.dist.py " +
-			inst.Install.Root + "/django-DefectDojo/dojo/settings/settings.py",
+		"ln -s " + inst.Install.Root + "/django-DefectDojo/dojo/settings " +
+			inst.Install.Root + "/customizations",
 		"chown " + inst.Install.OS.User + "." + inst.Install.OS.Group + " " + inst.Install.Root +
 			"/django-DefectDojo/dojo/settings/settings.py",
 	}
