@@ -20,6 +20,7 @@ To use these as is, copy them to your install, make them executable and run them
 # ./dojo-start
 
   [ after a while...]
+
 # ./dojo-stop
 ```
 
