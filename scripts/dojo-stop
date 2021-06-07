@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Kill the screen sessions make with dojo-start
+screen -X -S worker kill
+screen -X -S beat kill
+screen -X -S dojo kill
+
+echo "DefectDojo has been stopped."
+

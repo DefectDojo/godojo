@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Warn about DB startup
+echo ""
+echo "WARNING: This script assumes you already have the database started. It will not work without a running DB."
+echo "         One way to start MySQL is to use: \"systemctl start mysql\""
+echo "         Add to start PostgreSQL is to use: \"systemctl start postgresql\""
+echo "         To survive a reboot use \"sytemctl enable [mysql or postgresql]\""
+echo "         To check DB status use \"sytemctl status [mysql or postgresql]\""
+echo ""
+
+# Get into the Dojo source directory first
+cd /opt/dojo/django-DefectDojo
+
+# Startup 3 Celery workers in a screen session named "worker"
+screen -S worker -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery -A dojo worker -l info --concurrency 3' &
+
+# Startup the Celery beat process
+screen -S beat -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery beat -A dojo -l info' &
+
+# Startup DefectDojo with 'runserver' on port 8000
+screen -S dojo -D -m /bin/bash -c 'source /opt/dojo/bin/activate && python manage.py runserver 0.0.0.0:8000' &
+
+echo "DefectDojo should now be available on port 8000 e.g. http://127.0.0.1:8000 or http://[your IP or hostname]:8000"
+
+## Notes on named screens:
+# From within a running screen, you can change it by typing
+# CTRL-a, :sessionname [name]. You can view running screen sessions
+# with screen -ls, and connect to one by name with screen -xS [name]
+# where [name] is the name above like "worker" or "dojo"
+# example:
+# $ screen -xS worker
+#   [attaches to the screen named "worker"]
+
+## Scrolling in screen
+# See https://unix.stackexchange.com/questions/40242/scroll-inside-screen-or-pause-output
+# short version:
+# hit Crt-A then ESC
+# Use the arrow up/down keys
+# when done, hit q or ESC to return to 'normal' screen
