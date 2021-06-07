@@ -31,6 +31,8 @@ The defaults in dojoConfig.yml are pretty sane. All you really need to do is:
 
 You can see all the configuration options with descriptions in the [example config file](https://github.com/DefectDojo/godojo/blob/master/example_dojoConfig.yml).
 
+Note: godojo is built with go version 1.16.3 (or newer)
+
 ### Assumptions / requirements
 
 * Bash is available and in $PATH
