@@ -20,7 +20,6 @@ run
 rdocker
 godojo
 .undodir
-scripts
 output
 staging
 releases
