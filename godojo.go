@@ -24,7 +24,7 @@ import (
 // Global vars
 var (
 	// Installer version
-	ver = "1.1.3"
+	ver = "1.1.4"
 	// Configuration file name
 	cf = "dojoConfig.yml"
 	// Global config struct
@@ -172,10 +172,10 @@ func getDojoRelease(i *config.InstallConfig) error {
 
 	// Setup a custom http client for downloading the Dojo release
 	var ddClient = &http.Client{
-		// Set time to a max of 20 seconds
-		Timeout: time.Second * 20,
+		// Set time to a max of 60 seconds
+		Timeout: time.Second * 60,
 	}
-	traceMsg("http.Client timeout set to 20 seconds for release download")
+	traceMsg("http.Client timeout set to 60 seconds for release download")
 
 	// Download requested release from Dojo's Github repo
 	traceMsg(fmt.Sprintf("Downloading release from %+v", dwnURL))

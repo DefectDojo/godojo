@@ -313,7 +313,9 @@ func parseFile(f string, sep string, flds map[string]string) map[string]string {
 // TODO: Make this fail for unsupported OSes
 // TODO: Consider making a bootstrap per Linux distro switching to those here
 func initBootstrap(id string, b *osCmds) {
-	switch distOnly(id) {
+	switch strings.ToLower(distOnly(id)) {
+	case "debian":
+		fallthrough
 	case "ubuntu":
 		b.id = id
 		b.cmds = []string{

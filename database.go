@@ -68,7 +68,6 @@ func installDBClient(osTar string, dbTar *config.DBTarget, dCmd *osCmds) {
 	return
 }
 
-
 func startDB(osTar string, dbTar *config.DBTarget, dbCmd *osCmds) {
 	// Look at the dbTar and call function to install that DB target
 	switch dbTar.Engine {
@@ -92,6 +91,8 @@ func startSQLite(osTar string, dbCmd *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		dbCmd.id = osTar
 		dbCmd.cmds = []string{
 			"echo 'Nothing to start for SQLite'",
@@ -113,6 +114,8 @@ func startMariaDB(osTar string, dbCmd *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		dbCmd.id = osTar
 		// TODO: Propably time to convert this to systemctl calls
 		//       also consider enabling the service just in case
@@ -136,6 +139,8 @@ func startMySQL(osTar string, dbCmd *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		dbCmd.id = osTar
 		// TODO: Propably time to convert this to systemctl calls
 		//       also consider enabling the service just in case
@@ -159,11 +164,13 @@ func startPostgres(osTar string, dbCmd *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		dbCmd.id = osTar
 		// TODO: Propably time to convert this to systemctl calls
 		//       also consider enabling the service just in case
 		dbCmd.cmds = []string{
-			"service postgresql start",
+			"/usr/sbin/service postgresql start",
 		}
 		dbCmd.errmsg = []string{
 			"Unable to start PostgreSQL",

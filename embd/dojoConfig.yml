@@ -14,11 +14,11 @@
 # SecretKey
 
 Install:
-  Version: "1.15.1" # DD_Version - Release version of DefectDojo from Github Releases
+  Version: "2.0.3" # DD_Version - Release version of DefectDojo from Github Releases
   SourceInstall: false # DD_SourceInstall - Boolean if a source install is desired (vs a release)
   # If ^ is true, a souce code install will occur overriding the release version provided
   SourceBranch: "dev" # DD_SourceBranch - The branch's HEAD to be checked out if SourceInstall is true
-  SourceCommit:  22294ab6c69468057bce79386768869b2788de5d # DD_SourceCommit - If there is a value here, the specific commit will be used over the branch ^
+  SourceCommit: # DD_SourceCommit - If there is a value here, the specific commit will be used over the branch ^
   Quiet: false # DD_Quiet - Suppress normal output - only errors will be shown
   Trace: true # DD_Trace - Boolean to enable the most verbose logging during install
   Redact: true # DD_Redact - Boolean to redact sensitive info from the logs

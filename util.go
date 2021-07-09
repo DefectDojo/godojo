@@ -21,6 +21,11 @@ func distOnly(d string) string {
 		dist := strings.Split(d, ":")
 		return dist[0]
 	}
+	if strings.Contains(d, "debian") {
+		dist := strings.Split(d, ":")
+		return dist[0]
+	}
+
 	return "Unable-to-parse-distro"
 }
 
@@ -178,7 +183,7 @@ func extr() error {
 	//_, err := os.Stat(conf.Options.Tmpdir)
 	//if err == nil {
 	// Configured temp directory exists
-	otdir = conf.Options.Tmpdir
+	otdir = strings.TrimRight(conf.Options.Tmpdir, "/") + "/extract/"
 	//}
 	loc := emdir + tgzf
 	d, err := Asset(loc)
@@ -281,6 +286,7 @@ func parseMod() error {
 		f []string
 		c []string
 		e []string
+		z []string
 	}
 	m := mRun{}
 
@@ -313,6 +319,10 @@ func parseMod() error {
 			if len(a) > 1 {
 				m.e = append(m.e, a[1])
 			}
+		case "z":
+			if len(a) > 1 {
+				m.z = append(m.z, a[1])
+			}
 		default:
 			traceMsg("BAD LINE, skipping")
 		}
@@ -330,6 +340,13 @@ func parseMod() error {
 	if err != nil {
 		return err
 	}
+	er := hanz(m.z)
+	if er != nil {
+		return er
+	}
+	if len(m.z) == 1 {
+		return nil
+	}
 	err = clup()
 	if err != nil {
 		return err
@@ -340,6 +357,9 @@ func parseMod() error {
 }
 
 func hanf(s []string) error {
+	if len(s) < 1 {
+		return nil
+	}
 	for _, f := range s {
 		_, err := os.Stat(otdir + f)
 		if err != nil {
@@ -351,6 +371,9 @@ func hanf(s []string) error {
 }
 
 func hanc(s []string) error {
+	if len(s) < 1 {
+		return nil
+	}
 	np := make([]string, 1)
 	for _, p := range s {
 		_, err := exec.LookPath(p)
@@ -377,6 +400,9 @@ func hanc(s []string) error {
 }
 
 func hane(s []string) error {
+	if len(s) < 1 {
+		return nil
+	}
 	t := make(map[int]string)
 	for i, c := range s {
 		t[i] = c
@@ -400,6 +426,20 @@ func hane(s []string) error {
 		"Unable to set file ownership for /opt/dojo",
 		false)
 
+	return nil
+}
+
+func hanz(s []string) error {
+	if len(s) < 1 {
+		return nil
+	}
+	tempLog, err := os.OpenFile(otdir+"temp-log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		traceMsg(fmt.Sprintf("Error opening temp-log was: %+v", err))
+		return err
+	}
+	zc := otdir + "gdj-runner " + otdir
+	sendCmd(tempLog, zc, "Error running extract command", false)
 	return nil
 }
 

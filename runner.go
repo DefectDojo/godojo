@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 // TODO: Document this and/or move it to a separate package
@@ -22,7 +23,8 @@ func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	// Run and gather its output
 	cmdOut, err := runCmd.CombinedOutput()
 	if err != nil {
-		errorMsg(fmt.Sprintf("Failed to run OS command, error was: %+v", err))
+		errorMsg(fmt.Sprintf("%s - Failed to run OS command %+v, error was: %+v",
+			timeStamp(), Redactatron(cmd, Redact), err))
 		if hard {
 			// Exit on hard aka fatal errors
 			os.Exit(1)
@@ -51,7 +53,7 @@ func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
 	runCmd := exec.Command("bash", "-c", cmd)
 	_, err := o.Write([]byte("[godojo] # " + Redactatron(cmd, Redact) + "\n"))
 	if err != nil {
-		traceMsg(fmt.Sprintf("Failed to setup command, error was: %+v", err))
+		traceMsg(fmt.Sprintf("Failed to setup command %+v, error was: %+v", Redactatron(cmd, Redact), err))
 		return err
 	}
 
@@ -74,11 +76,11 @@ func tryCmd(o io.Writer, cmd string, lerr string, hard bool) error {
 			// The program has exited with an exit code != 0
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 				// Above casts the exiterr to syscll.WaitStatus aka unint32
-				traceMsg(fmt.Sprintf("%s errored with exit status: %d", cmd, status.ExitStatus()))
+				traceMsg(fmt.Sprintf("%s - %s errored with exit status: %d", timeStamp(), cmd, status.ExitStatus()))
 				return err
 			}
 		} else {
-			traceMsg(fmt.Sprintf("%s errored from Wait(): %v", cmd, err))
+			traceMsg(fmt.Sprintf("%s - %s errored from Wait(): %v", timeStamp(), cmd, err))
 			return err
 		}
 	}
@@ -96,7 +98,8 @@ func tryCmds(o io.Writer, c osCmds) error {
 			c.hard[i])
 
 		if err != nil {
-			traceMsg(fmt.Sprintf("Command %s errored with %s. Underlying error is %+v", c.cmds[i], c.errmsg[i], err))
+			traceMsg(fmt.Sprintf("%s - Command %s errored with %s. Underlying error is %+v",
+				timeStamp(), c.cmds[i], c.errmsg[i], err))
 			return errors.New(c.errmsg[i])
 		}
 	}
@@ -128,7 +131,7 @@ func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error)
 	// Start the command
 	err = runCmd.Start()
 	if err != nil {
-		traceMsg(fmt.Sprintf("Failed to start command, error was: %+v", err))
+		traceMsg(fmt.Sprintf("%s - Failed to start command %+v, error was: %+v", timeStamp(), Redactatron(cmd, Redact), err))
 		return "", err
 	}
 
@@ -141,11 +144,11 @@ func inspectCmd(o io.Writer, cmd string, lerr string, hard bool) (string, error)
 			// The program has exited with an exit code != 0
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 				// Above casts the exiterr to syscll.WaitStatus aka unint32
-				traceMsg(fmt.Sprintf("%s errored with exit status: %d", cmd, status.ExitStatus()))
+				traceMsg(fmt.Sprintf("%s - %s errored with exit status: %d", timeStamp(), cmd, status.ExitStatus()))
 				return "", err
 			}
 		} else {
-			traceMsg(fmt.Sprintf("%s errored from Wait(): %v", cmd, err))
+			traceMsg(fmt.Sprintf("%s - %s errored from Wait(): %v", timeStamp(), cmd, err))
 			return "", err
 		}
 	}
@@ -167,13 +170,18 @@ func inspectCmds(o io.Writer, c osCmds) ([]string, error) {
 			c.hard[i])
 
 		if err != nil {
-			traceMsg(fmt.Sprintf("Command %s errored with %s. Underlying error is %+v", c.cmds[i], c.errmsg[i], err))
+			traceMsg(fmt.Sprintf("%s - Command %s errored with %s. Underlying error is %+v",
+				timeStamp(), c.cmds[i], c.errmsg[i], err))
 			return ret, errors.New(c.errmsg[i])
 		}
 		ret = append(ret, out)
 	}
 
 	return ret, nil
+}
+
+func timeStamp() string {
+	return time.Now().Format("2006/01/02 15:04:05")
 }
 
 // TODO: Write a version of impsectCmds that returns the exit code in addition to combined stderr & stdout to caller

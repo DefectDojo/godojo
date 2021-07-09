@@ -13,12 +13,16 @@ import (
 
 // Commands to bootstrap Ubuntu for the installer
 func ubuntuInitOSInst(id string, b *osCmds) {
-	switch id {
+	switch strings.ToLower(id) {
+	case "debian:10":
+		fallthrough
 	case "ubuntu:18.04":
 		fallthrough
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			fmt.Sprintf("curl -sS %s | apt-key add -", YarnGPG),
@@ -33,7 +37,7 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 			"Unable to add yard repo as an apt source",
 			"Unable to update apt database",
 			"Unable to install sudo",
-			"Unable to install nodejs 12.x",
+			"Unable to install nodejs",
 			"Installing OS packages with apt failed",
 		}
 		b.hard = []bool{
@@ -57,6 +61,8 @@ func ubuntuInstSQLite(id string, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3",
@@ -79,6 +85,8 @@ func ubuntuInstMariaDB(id string, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server libmariadbclient-dev",
@@ -102,6 +110,8 @@ func ubuntuInstMySQL(id string, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev",
@@ -118,15 +128,19 @@ func ubuntuInstMySQL(id string, b *osCmds) {
 
 // Commands to install PostgreSQL on Ubuntu
 func ubuntuInstPostgreSQL(id string, b *osCmds) {
-	switch id {
+	switch strings.ToLower(id) {
+	case "debian:10":
+		fallthrough
 	case "ubuntu:18.04":
 		fallthrough
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y libpq-dev postgresql postgresql-contrib",
+			"DEBIAN_FRONTEND=noninteractive apt-get install -y libpq-dev postgresql postgresql-contrib postgresql-client-common",
 		}
 		b.errmsg = []string{
 			"Unable to install PostgreSQL",
@@ -145,11 +159,13 @@ func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
-			"groupadd -f postgres",
-			"useradd -s /bin/bash -m -g postgres postgres",
+			"/usr/sbin/groupadd -f postgres",
+			"/usr/sbin/useradd -s /bin/bash -m -g postgres postgres",
 		}
 		b.errmsg = []string{
 			"Unable to install PostgreSQL client",
@@ -253,13 +269,15 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
 			"python3 -m virtualenv --python=/usr/bin/python3 " + inst.Root,
 			inst.Root + "/bin/python3 -m pip install --upgrade pip",
 			inst.Root + "/bin/pip3 install --use-deprecated=legacy-resolver -r " + inst.Root + "/django-DefectDojo/requirements.txt",
 			"mkdir " + inst.Root + "/logs",
-			"groupadd -f " + inst.OS.Group,
+			"/usr/sbin/groupadd -f " + inst.OS.Group,
 			"id " + inst.OS.User + " &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User + "; fi",
 			"chown -R " + inst.OS.User + "." + inst.OS.Group + " " + inst.Root,
 		}
@@ -298,15 +316,18 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	case "ubuntu:20.04":
 		fallthrough
 	case "ubuntu:20.10":
+		fallthrough
+	case "ubuntu:21.04":
 		b.id = id
 		b.cmds = []string{
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput",
+			//"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations dojo",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py migrate",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\"" +
 				inst.Admin.User + "\" --email=\"" + inst.Admin.Email + "\"",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && " +
 				inst.Root + "/django-DefectDojo/setup-superuser.expect " + inst.Admin.User + " " + inst.Admin.Pass,
+			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
 			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
@@ -326,11 +347,12 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 			"chown -R " + inst.OS.User + "." + inst.OS.Group + " " + inst.Root,
 		}
 		b.errmsg = []string{
-			"Initial makemgrations failed",
+			//"Initial makemgrations failed",
 			"Failed during makemgration dojo",
 			"Failed during database migrate",
 			"Failed while creating DefectDojo superuser",
 			"Failed while setting the password for the DefectDojo superuser",
+			"Failed while the loading data for role",
 			"Failed while the loading data for product_type",
 			"Failed while the loading data for test_type",
 			"Failed while the loading data for development_environment",
@@ -350,6 +372,7 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 			"Unable to change ownership of the DefectDojo directory",
 		}
 		b.hard = []bool{
+			//true,
 			true,
 			true,
 			true,
