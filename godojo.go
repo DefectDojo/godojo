@@ -24,7 +24,7 @@ import (
 // Global vars
 var (
 	// Installer version
-	ver = "1.1.4"
+	ver = "1.1.5"
 	// Configuration file name
 	cf = "dojoConfig.yml"
 	// Global config struct
