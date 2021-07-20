@@ -27,14 +27,6 @@ type targetOS struct {
 	release string
 }
 
-// OS commands to perform an action e.g. install DB from OS packages
-type osCmds struct {
-	id     string   // Holds distro + release e.g. ubuntu:18.04
-	cmds   []string // Holds the os commands
-	errmsg []string // Holds the error messages if the matching command fails
-	hard   []bool   // Flag to know if an error on the matching command is fatal
-}
-
 func determineOS(tOS *targetOS) {
 	// Determine OS first
 	tOS.os = runtime.GOOS

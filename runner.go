@@ -11,6 +11,27 @@ import (
 	"time"
 )
 
+// OS commands to perform an action e.g. install DB from OS packages
+type osCmds struct {
+	id     string   // Holds distro + release e.g. ubuntu:18.04
+	cmds   []string // Holds the os commands
+	errmsg []string // Holds the error messages if the matching command fails
+	hard   []bool   // Flag to know if an error on the matching command is fatal
+}
+
+func newCmds(d string) *osCmds {
+	var o osCmds
+	o.id = d
+	return &o
+}
+
+func addCmd(o *osCmds, cmd string, lerr string, hard bool) {
+	// Append command to existing list
+	o.cmds = append(o.cmds, cmd)
+	o.errmsg = append(o.cmds, lerr)
+	o.hard = append(o.hard, hard)
+}
+
 // TODO: Document this and/or move it to a separate package
 func sendCmd(o io.Writer, cmd string, lerr string, hard bool) {
 	// Setup command
