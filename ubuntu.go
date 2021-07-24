@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mtesauro/godojo/config"
@@ -309,7 +310,14 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	traceMsg(fmt.Sprintf("Injecting file %s at %s", "setup-superuser.expect", inst.Root+"/django-DefectDojo"))
 	_ = injectFile("setup-superuser.expect", inst.Root+"/django-DefectDojo", 0755)
 
+	err := patchOMatic(inst)
+	if err != nil {
+		traceMsg(fmt.Sprintf("patchOMatic failed with non-blocking error: %+v", err))
+		traceMsg("A failure of patchOMatic may lead to a corrupt install - be warned")
+	}
+
 	// Django installs - migrations, create Django superuser
+	// TODO: Remove this switch to simplify
 	switch id {
 	case "ubuntu:18.04":
 		fallthrough
@@ -318,91 +326,82 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
-		b.id = id
-		b.cmds = []string{
-			//"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations dojo",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py migrate",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\"" +
-				inst.Admin.User + "\" --email=\"" + inst.Admin.Email + "\"",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && " +
-				inst.Root + "/django-DefectDojo/setup-superuser.expect " + inst.Admin.User + " " + inst.Admin.Pass,
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata system_settings",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_type",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_category",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_requirement",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata language_type",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata objects_review",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata regulation",
-			//"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py import_surveys",
-			//"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata initial_surveys",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py buildwatson",
-			"cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py installwatson",
-			"cd " + inst.Root + "/django-DefectDojo/components && yarn",
-			"cd " + inst.Root + "/django-DefectDojo/ && source ../bin/activate && python3 manage.py collectstatic --noinput",
-			"chown -R " + inst.OS.User + "." + inst.OS.Group + " " + inst.Root,
+		// Add commands to setup DefectDojo - migrations, super user,
+		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput", "Initial makemgrations failed",
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations dojo",
+			"Failed during makemgration dojo", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py migrate",
+			"Failed during database migrate", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\""+
+			inst.Admin.User+"\" --email=\""+inst.Admin.Email+"\"",
+			"Failed while creating DefectDojo superuser", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && "+
+			inst.Root+"/django-DefectDojo/setup-superuser.expect "+inst.Admin.User+" "+inst.Admin.Pass,
+			"Failed while setting the password for the DefectDojo superuser", true)
+
+		// Roles showed up in 2.x.x
+		if onlyAfter(inst.Version, 2, 0, 0) {
+			addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
+				"Failed while the loading data for role", true)
 		}
-		b.errmsg = []string{
-			//"Initial makemgrations failed",
-			"Failed during makemgration dojo",
-			"Failed during database migrate",
-			"Failed while creating DefectDojo superuser",
-			"Failed while setting the password for the DefectDojo superuser",
-			"Failed while the loading data for role",
-			"Failed while the loading data for product_type",
-			"Failed while the loading data for test_type",
-			"Failed while the loading data for development_environment",
-			"Failed while the loading data for system_settings",
-			"Failed while the loading data for benchmark_type",
-			"Failed while the loading data for benchmark_category",
-			"Failed while the loading data for benchmark_requirement",
-			"Failed while the loading data for language_type",
-			"Failed while the loading data for objects_review",
-			"Failed while the loading data for regulation",
-			//"Failed while the running import_surveys",
-			//"Failed while the loading data for initial_surveys",
-			"Failed while the running buildwatson",
-			"Failed while the running installwatson",
-			"Failed while the running yarn",
-			"Failed while the running collectstatic",
-			"Unable to change ownership of the DefectDojo directory",
-		}
-		b.hard = []bool{
-			//true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			//true,
-			//true,
-			true,
-			true,
-			true,
-			true,
-			true,
-		}
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
+			"Failed while the loading data for product_type", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
+			"Failed while the loading data for test_type", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
+			"Failed while the loading data for development_environment", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata system_settings",
+			"Failed while the loading data for system_settings", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_type",
+			"Failed while the loading data for benchmark_type", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_category",
+			"Failed while the loading data for benchmark_category", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_requirement",
+			"Failed while the loading data for benchmark_requirement", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata language_type",
+			"Failed while the loading data for language_type", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata objects_review",
+			"Failed while the loading data for objects_review", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata regulation",
+			"Failed while the loading data for regulation", true)
+
+		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py import_surveys", "Failed while the running import_surveys",
+		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata initial_surveys", "Failed while the loading data for initial_surveys",
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py buildwatson",
+			"Failed while the running buildwatson", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py installwatson",
+			"Failed while the running installwatson", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo/components && yarn",
+			"Failed while the running yarn", true)
+
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo/ && source ../bin/activate && python3 manage.py collectstatic --noinput",
+			"Failed while the running collectstatic", true)
+
+		addCmd(b, "chown -R "+inst.OS.User+"."+inst.OS.Group+" "+inst.Root,
+			"Unable to change ownership of the DefectDojo directory", true)
 	}
 
 	return
 }
 
 func injectFile(n string, p string, mask fs.FileMode) error {
-	loc := emdir + "setup-superuser.expect"
+	loc := emdir + n
 	d, err := Asset(loc)
 	if err != nil {
 		return err
@@ -417,4 +416,55 @@ func injectFile(n string, p string, mask fs.FileMode) error {
 	traceMsg(fmt.Sprintf("Wrote file %s at %s", n, p))
 
 	return nil
+}
+
+func patchOMatic(inst *config.InstallConfig) error {
+	// If a source or commit install, do no patching
+	if inst.SourceInstall {
+		return nil
+	}
+
+	// Check the install version for any needed patches
+	switch inst.Version {
+	case "1.15.1":
+		// Replace dojo/tools/factory to work around bug in Python 3.8 - https://bugs.python.org/issue44061
+		w := bufio.NewWriter(os.Stdout)
+		_ = injectFile("factory_2.0.3", inst.Root+"/django-DefectDojo/dojo/tools", 755)
+		_ = tryCmd(w,
+			"mv -f "+inst.Root+"/django-DefectDojo/dojo/tools/factory.py "+inst.Root+"/django-DefectDojo/dojo/tools/factory_py.buggy",
+			"Error renaming factory.py to factory_py.buggy", false)
+		_ = tryCmd(w,
+			"mv -f "+inst.Root+"/django-DefectDojo/dojo/tools/factory_2.0.3 "+inst.Root+"/django-DefectDojo/dojo/tools/factory.py",
+			"Error replacing factory.py with updated one from version 2.0.3", false)
+	}
+
+	return nil
+}
+
+//onlyAfter(inst.Version, "2")
+func onlyAfter(v string, major int, minor int, patch int) bool {
+	// Split up version
+	vBits := strings.Split(v, ".")
+	if len(vBits) != 3 {
+		traceMsg(fmt.Sprintf("Bad version string: %s sent to onlyAfter()", v))
+		return false
+	}
+
+	// Convert version bits
+	vMaj, _ := strconv.Atoi(vBits[0])
+	vMin, _ := strconv.Atoi(vBits[1])
+	vPat, _ := strconv.Atoi(vBits[2])
+
+	//
+	if vMaj < major {
+		return false
+	}
+	if vMin < minor {
+		return false
+	}
+	if vPat < patch {
+		return false
+	}
+
+	return true
 }
