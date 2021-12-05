@@ -155,7 +155,6 @@ func addRedact(s string) {
 
 func escSpCar(s string) string {
 	// Replace special characters that cause issues when exec'ing in Bash
-	fmt.Printf("Before escaping string - %s\n", s)
 
 	// Replace $ with \$
 	s = strings.ReplaceAll(s, "\\", "\\\\")
@@ -164,7 +163,6 @@ func escSpCar(s string) string {
 	// Replace $ with \$
 	s = strings.ReplaceAll(s, "`", "\\`")
 
-	fmt.Printf("After escaping string - %s\n", s)
 	return s
 }
 
