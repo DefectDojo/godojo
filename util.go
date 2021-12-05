@@ -153,6 +153,21 @@ func addRedact(s string) {
 	sensStr = append(sensStr, s)
 }
 
+func escSpCar(s string) string {
+	// Replace special characters that cause issues when exec'ing in Bash
+	fmt.Printf("Before escaping string - %s\n", s)
+
+	// Replace $ with \$
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	// Replace $ with \$
+	s = strings.ReplaceAll(s, "$", "\\$")
+	// Replace $ with \$
+	s = strings.ReplaceAll(s, "`", "\\`")
+
+	fmt.Printf("After escaping string - %s\n", s)
+	return s
+}
+
 // Deemb -
 func deemb(f []string, o string) error {
 	// Testing embedding files

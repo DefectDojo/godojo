@@ -165,8 +165,8 @@ func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
-			"/usr/sbin/groupadd -f postgres",
-			"/usr/sbin/useradd -s /bin/bash -m -g postgres postgres",
+			"/usr/sbin/groupadd -f postgres",                         // TODO: consider using os.Group.Lookup before calling this
+			"/usr/sbin/useradd -s /bin/bash -m -g postgres postgres", // TODO: consider using os.User.Lookup before calling this
 		}
 		b.errmsg = []string{
 			"Unable to install PostgreSQL client",
@@ -276,10 +276,10 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 		b.cmds = []string{
 			"python3 -m virtualenv --python=/usr/bin/python3 " + inst.Root,
 			inst.Root + "/bin/python3 -m pip install --upgrade pip",
-			inst.Root + "/bin/pip3 install --use-deprecated=legacy-resolver -r " + inst.Root + "/django-DefectDojo/requirements.txt",
+			inst.Root + "/bin/pip3 install -r " + inst.Root + "/django-DefectDojo/requirements.txt",
 			"mkdir " + inst.Root + "/logs",
-			"/usr/sbin/groupadd -f " + inst.OS.Group,
-			"id " + inst.OS.User + " &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User + "; fi",
+			"/usr/sbin/groupadd -f " + inst.OS.Group, // TODO: check with os.Group.Lookup
+			"id " + inst.OS.User + " &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g " + inst.OS.Group + " " + inst.OS.User + "; fi", // TODO: check with os.User.Lookup
 			"chown -R " + inst.OS.User + "." + inst.OS.Group + " " + inst.Root,
 		}
 		b.errmsg = []string{
@@ -334,12 +334,18 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py migrate",
 			"Failed during database migrate", true)
 
+		// Ensure there's a value for email as the call will fail without one
+		adminEmail := "default.user@defectdojo.org"
+		if len(inst.Admin.Email) > 0 {
+			// If user configures an incorrect email, this will still fail but that's on them, not godojo
+			adminEmail = inst.Admin.Email
+		}
 		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\""+
-			inst.Admin.User+"\" --email=\""+inst.Admin.Email+"\"",
+			inst.Admin.User+"\" --email=\""+adminEmail+"\"",
 			"Failed while creating DefectDojo superuser", true)
 
 		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && "+
-			inst.Root+"/django-DefectDojo/setup-superuser.expect "+inst.Admin.User+" "+inst.Admin.Pass,
+			inst.Root+"/django-DefectDojo/setup-superuser.expect "+inst.Admin.User+" \""+escSpCar(inst.Admin.Pass)+"\"",
 			"Failed while setting the password for the DefectDojo superuser", true)
 
 		// Roles showed up in 2.x.x
