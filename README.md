@@ -14,6 +14,8 @@ The currently supported Linux distros and database configurations are listed [he
 
 godojo is developed targeting .deb (Debian) based distributions especially Ubuntu but should work on any Debian-based distro.
 
+For information on starting DefectDojo after installing and upgrading an install done by godojo, see [here](https://github.com/DefectDojo/godojo/tree/master/docs-and-scripts)
+
 DefectDojo also supports [other methods of installation](https://github.com/DefectDojo/django-DefectDojo#supported-installation-options) that are not covered by godojo.
 
 ### Dependencies
