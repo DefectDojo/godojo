@@ -16,7 +16,11 @@ cd /opt/dojo/django-DefectDojo
 screen -S worker -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery -A dojo worker -l info --concurrency 3' &
 
 # Startup the Celery beat process
-screen -S beat -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery beat -A dojo -l info' &
+screen -S beat -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery --app dojo beat -l info' &
+# NOTE:
+# If using a celery version that is less that 5.0, you'll need to use the command below
+# screen -S beat -D -m /bin/bash -c 'source /opt/dojo/bin/activate && C_FORCE_ROOT="true" celery beat -A dojo -l info' &
+# Thanks Celery for changing the argument order. :-)
 
 # Startup DefectDojo with 'runserver' on port 8000
 screen -S dojo -D -m /bin/bash -c 'source /opt/dojo/bin/activate && python manage.py runserver 0.0.0.0:8000' &

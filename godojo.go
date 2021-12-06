@@ -81,7 +81,7 @@ func dojoBanner() {
 	fmt.Println("                                               /___/         ")
 	fmt.Println("    version ", ver)
 	fmt.Println("")
-	fmt.Println("  Welcome to godojo, the official way to install DefectDojo.")
+	fmt.Println("  Welcome to godojo, the official way to install DefectDojo on iron.")
 	fmt.Println("  For more information on how goDojo does an install, see:")
 	fmt.Printf("  %s", HelpURL)
 	fmt.Println("")

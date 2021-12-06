@@ -89,7 +89,7 @@ Once you have a dojoConfig.yml you're happy with, just run godojo:
                                                /___/
     version  1.1.1
 
-  Welcome to godojo, the official way to install DefectDojo.
+  Welcome to godojo, the official way to install DefectDojo on iron.
   For more information on how goDojo does an install, see:
   https://github.com/DefectDojo/godojo
 
