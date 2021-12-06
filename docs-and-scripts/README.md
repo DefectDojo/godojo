@@ -1,4 +1,4 @@
-## Bonus scripts
+## Bonus Docs and Scripts
 
 godojo's primary job is to get a working install of DefectDojo onto a VM. How you want to run that install is a matter of opinion.  Are you running for yourself? Just experimenting/playing around with DefectDojo? Planning on having a team of people use DefectDojo? Is the install on a cloud provider, a corporate LAN or just on your laptop?
 
@@ -7,6 +7,8 @@ So, there's not **one way** to run DefectDojo after godjo is done. It realy depe
 Just to get you started, I've added these two simple scripts to this repo. They will start DefectDojo (the application and the Celery services) for you. They assume the database you chose (MySQL or PostgreSQL) is already running.
 
 Consider this a good starting place to figuring out the install that works for your situation.
+
+**Upgrading instructions** for DefectDojo installed by godojo is located [here](https://github.com/DefectDojo/godojo/tree/master/docs-and-scripts/upgrade.md)
 
 ### Using the scripts
 
