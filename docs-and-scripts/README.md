@@ -8,7 +8,7 @@ Just to get you started, I've added these two simple scripts to this repo. They 
 
 Consider this a good starting place to figuring out the install that works for your situation.
 
-**Upgrading instructions** for DefectDojo installed by godojo is located [here](https://github.com/DefectDojo/godojo/tree/master/docs-and-scripts/upgrade.md)
+**Upgrading instructions** for DefectDojo installed by godojo is located [here](https://github.com/DefectDojo/godojo/blob/master/docs-and-scripts/upgrading.md)
 
 ### Using the scripts
 
