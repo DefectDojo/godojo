@@ -37,7 +37,7 @@ Note: The example below uses the default paths and options from godojo. If you a
 (1) Stop Dojo
 
 ```
-./dojo-stop
+systemctl stop sysdojo
 ```
 
 This assumes you use the example scripts provided here. You may have created a service file and would just do `systemctl stop DefectDojo` or could use `kill 15 [pid]`. The key is to make sure that you stop Celery Worker, Celery Beat and DefectDojo (the django app)
@@ -107,7 +107,7 @@ cd /opt/dojo/django-DefectDojo/
 (7) Start DefectDojo
 
 ```
-./dojo-start
+systemctl start sysdojo
 ```
 
 You should have 2 Celery, one DefectDojo (python) and a DB running at the least:
