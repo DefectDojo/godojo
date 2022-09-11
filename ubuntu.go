@@ -31,7 +31,7 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get install sudo",
 			fmt.Sprintf("curl -sL %s | bash - ", NodeURL),
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip python3-virtualenv yarn build-essential expect",
+			"DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip python3-virtualenv yarn build-essential expect libcurl4-openssl-dev",
 		}
 		b.errmsg = []string{
 			"Unable to obtain the gpg key for Yarn",
@@ -308,7 +308,13 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	// Setup expect script needed to set initial admin password
 	traceMsg(fmt.Sprintf("Injecting file %s at %s", "setup-superuser.expect", inst.Root+"/django-DefectDojo"))
-	_ = injectFile("setup-superuser.expect", inst.Root+"/django-DefectDojo", 0755)
+	//_ = injectFile(suExpect, inst.Root+"/django-DefectDojo", 0755)
+	terr := injectFile(suExpect, inst.Root+"/django-DefectDojo", 0755)
+	if terr != nil {
+		fmt.Println("SOMETHING BAD HAPPENED HERE")
+		fmt.Printf("Error was: %+v\n", terr)
+		os.Exit(1)
+	}
 
 	err := patchOMatic(inst)
 	if err != nil {
@@ -407,19 +413,26 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 }
 
 func injectFile(n string, p string, mask fs.FileMode) error {
-	loc := emdir + n
-	d, err := Asset(loc)
+	// Extract embedded file
+	f, err := embd.ReadFile(n)
 	if err != nil {
-		return err
+		// Embeded file was not found.
+		fmt.Println("Unable to extract embedded patch file")
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
 
-	err = ioutil.WriteFile(p+"/"+n, d, mask)
+	// Strip off embedded directory from filename
+	name := strings.Replace(n, "embd/", "", 1)
+
+	// Write the file to disk
+	err = ioutil.WriteFile(p+"/"+name, f, mask)
 	if err != nil {
 		// File can't be written
 		return err
 	}
 
-	traceMsg(fmt.Sprintf("Wrote file %s at %s", n, p))
+	traceMsg(fmt.Sprintf("Wrote file %s at %s", name, p))
 
 	return nil
 }
@@ -435,7 +448,7 @@ func patchOMatic(inst *config.InstallConfig) error {
 	case "1.15.1":
 		// Replace dojo/tools/factory to work around bug in Python 3.8 - https://bugs.python.org/issue44061
 		w := bufio.NewWriter(os.Stdout)
-		_ = injectFile("factory_2.0.3", inst.Root+"/django-DefectDojo/dojo/tools", 755)
+		_ = injectFile(factory2, inst.Root+"/django-DefectDojo/dojo/tools", 755)
 		_ = tryCmd(w,
 			"mv -f "+inst.Root+"/django-DefectDojo/dojo/tools/factory.py "+inst.Root+"/django-DefectDojo/dojo/tools/factory_py.buggy",
 			"Error renaming factory.py to factory_py.buggy", false)
