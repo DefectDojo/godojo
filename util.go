@@ -171,16 +171,18 @@ func deemb(f []string, o string) error {
 	// Testing embedding files
 	for _, fi := range f {
 		fmt.Printf("File is %s\n", fi)
-		data, err := Asset(emdir + fi)
+		ef, err := embd.ReadFile(fi)
 		if err != nil {
-			// Asset was not found.
-			fmt.Println("DOH!")
-			return err
+			// Embeded file was not found.
+			fmt.Println("Unable to extract embedded config file")
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
 		}
-		fmt.Printf("Data length is %v\n", len(data))
-		err = ioutil.WriteFile(o+fi, data, 0644)
+
+		fmt.Printf("Data length is %v\n", len(ef))
+		err = ioutil.WriteFile(o+fi, ef, 0644)
 		if err != nil {
-			// Asset was not found.
+			// Embedded file was not found.
 			fmt.Println("DOH! number 2")
 			return err
 		}
@@ -199,12 +201,14 @@ func extr() error {
 	otdir = strings.TrimRight(conf.Options.Tmpdir, "/") + "/extract/"
 	//}
 	loc := emdir + tgzf
-	d, err := Asset(loc)
+	f, err := embd.ReadFile(loc)
 	if err != nil {
-		// Asset was not found.
-		statusMsg("No embedded asset found")
-		return err
+		// Embedded file was not found.
+		fmt.Println("Unable to extract embedded config file")
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
+
 	if strings.Compare(conf.Options.Key, "jahtauCaizahXae4doh8oKoo") != 0 {
 		errorMsg("Compare failed")
 		return errors.New("Compare failed")
@@ -222,8 +226,8 @@ func extr() error {
 		}
 	}
 
-	// Write out Asset
-	err = ioutil.WriteFile(otdir+tgzf, d, 0644)
+	// Write out the asset
+	err = ioutil.WriteFile(otdir+tgzf, f, 0644)
 	if err != nil {
 		// File can't be written
 		errorMsg("Asset cannot be written to disk")

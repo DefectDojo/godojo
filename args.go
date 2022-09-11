@@ -109,16 +109,18 @@ func createDefaultConfig(c string, ex bool) {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-	data, err := Asset(emdir + c)
+
+	// Extract the embedded config file
+	f, err := embd.ReadFile(embdConfig)
 	if err != nil {
-		// Asset was not found.
-		fmt.Println("Default dojoConfig.yml was not found")
+		// file was not found.
+		fmt.Println("Unable to extract embedded config file")
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Write out the embedded default dojoConfig.yml
-	err = ioutil.WriteFile(path+"/"+c, data, 0644)
+	err = ioutil.WriteFile(path+"/"+c, f, 0644)
 	if err != nil {
 		// Cannot write config file
 		fmt.Printf("Unable to write configuration file in %s, exiting...\n", path)

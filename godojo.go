@@ -1,7 +1,7 @@
 package main
 
-// TODO: Consider Cobra for command-line args - https://github.com/spf13/cobra
 import (
+	"embed"
 	"fmt"
 	"io"
 	"log"
@@ -20,6 +20,19 @@ import (
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 )
+
+// Embedded files using go:embed
+// dojoConfig.yml - example config file, used as default for dev installs
+// setup-superuser.expect - expect script to set the default admin password
+// factory_2.0.3 - python file to work around a bug in Python 3.8 and DefectDojo 1.15.1
+//                 see: https://github.com/DefectDojo/godojo/blob/master/ubuntu.go#L436
+// gdj.tar.gz - experiment on embedding commands into godojo, not currently used
+var embdConfig = "embd/dojoConfig.yml"
+var suExpect = "embd/setup-superuser.expect"
+var factory2 = "embd/factory_2.0.3"
+
+//go:embed embd/*
+var embd embed.FS
 
 // Global vars
 var (
@@ -513,7 +526,7 @@ func main() {
 		Quiet = true
 		err = extr()
 		if err != nil {
-			fmt.Printf("Configuration has Embd = %v but no embedded assets available\n", conf.Options.Embd)
+			fmt.Printf("Configuration has Embd = %v but no embedded files available\n", conf.Options.Embd)
 			os.Exit(1)
 		}
 		os.Exit(0)
