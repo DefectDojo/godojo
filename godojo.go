@@ -37,7 +37,7 @@ var embd embed.FS
 // Global vars
 var (
 	// Installer version
-	ver = "1.1.7"
+	ver = "1.1.8"
 	// Configuration file name
 	cf = "dojoConfig.yml"
 	// Global config struct
@@ -72,7 +72,7 @@ const (
 	CloneURL   = "https://github.com/DefectDojo/django-DefectDojo.git"
 	YarnGPG    = "https://dl.yarnpkg.com/debian/pubkey.gpg"
 	YarnRepo   = "deb https://dl.yarnpkg.com/debian/ stable main"
-	NodeURL    = "https://deb.nodesource.com/setup_12.x"
+	NodeURL    = "https://deb.nodesource.com/setup_18.x"
 )
 
 // Setup logging with type appended to the log lines - this logs all types to a single file
@@ -186,9 +186,9 @@ func getDojoRelease(i *config.InstallConfig) error {
 	// Setup a custom http client for downloading the Dojo release
 	var ddClient = &http.Client{
 		// Set time to a max of 60 seconds
-		Timeout: time.Second * 60,
+		Timeout: time.Second * 120,
 	}
-	traceMsg("http.Client timeout set to 60 seconds for release download")
+	traceMsg("http.Client timeout set to 120 seconds for release download")
 
 	// Download requested release from Dojo's Github repo
 	traceMsg(fmt.Sprintf("Downloading release from %+v", dwnURL))
