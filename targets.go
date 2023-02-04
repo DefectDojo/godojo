@@ -313,7 +313,7 @@ func initBootstrap(id string, b *osCmds) {
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get update",
 			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
-			"DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-virtualenv ca-certificates curl gnupg git",
+			"DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" install python3 python3-virtualenv ca-certificates curl gnupg git sudo",
 		}
 		b.errmsg = []string{
 			"Unable to update apt database",
@@ -323,7 +323,7 @@ func initBootstrap(id string, b *osCmds) {
 		b.hard = []bool{
 			true,
 			true,
-			true,
+			false,
 		}
 
 		return

@@ -24,6 +24,8 @@ func ubuntuInitOSInst(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			fmt.Sprintf("curl -sS %s | apt-key add -", YarnGPG),
@@ -64,6 +66,8 @@ func ubuntuInstSQLite(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3",
@@ -88,6 +92,8 @@ func ubuntuInstMariaDB(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server libmariadbclient-dev",
@@ -113,6 +119,8 @@ func ubuntuInstMySQL(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev",
@@ -139,6 +147,8 @@ func ubuntuInstPostgreSQL(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y libpq-dev postgresql postgresql-contrib postgresql-client-common",
@@ -162,6 +172,8 @@ func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
@@ -239,7 +251,7 @@ func ubuntuDefaultMySQL(c map[string]string) {
 func ubuntuDefaultPgSQL(creds map[string]string) {
 	traceMsg("Called ubuntuDefaultPgSQL")
 
-	// Sent user to postgres as that's the default DB user for any new install
+	// Set user to postgres as that's the default DB user for any new install
 	creds["user"] = "postgres"
 
 	// Use the default local OS user to set the postgres DB user
@@ -272,6 +284,8 @@ func ubuntuOSPrep(id string, inst *config.InstallConfig, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		b.id = id
 		b.cmds = []string{
 			"python3 -m virtualenv --python=/usr/bin/python3 " + inst.Root,
@@ -332,6 +346,8 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 	case "ubuntu:20.10":
 		fallthrough
 	case "ubuntu:21.04":
+		fallthrough
+	case "ubuntu:22.04":
 		// Add commands to setup DefectDojo - migrations, super user,
 		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput", "Initial makemgrations failed",
 		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations dojo",
