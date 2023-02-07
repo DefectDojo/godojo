@@ -49,7 +49,7 @@ func run(d *gdjDefault) {
 	createSettings(d, &osTarget)
 
 	// Setup DefectDojo
-	//setupDefectDojo(d, &osTarget)
+	setupDefectDojo(d, &osTarget)
 
 	fmt.Println("\n More To Be Written")
 	d.statusMsg(fmt.Sprintf("\n\nSuccessfully reached the end of main in godojo version %+v", d.ver))
