@@ -371,40 +371,49 @@ func ubuntuSetupDDjango(id string, inst *config.InstallConfig, b *osCmds) {
 			"Failed while setting the password for the DefectDojo superuser", true)
 
 		// Roles showed up in 2.x.x
-		if onlyAfter(inst.Version, 2, 0, 0) {
-			addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
-				"Failed while the loading data for role", true)
-		}
+		//if onlyAfter(inst.Version, 2, 0, 0) {
+		//	addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
+		//		"Failed while the loading data for role", true)
+		//}
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
-			"Failed while the loading data for product_type", true)
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata "+
+			"system_settings initial_banner_conf product_type test_type development_environment benchmark_type "+
+			"benchmark_category benchmark_requirement language_type objects_review regulation initial_surveys role",
+			"Failed while the loading data for a default install", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
-			"Failed while the loading data for test_type", true)
+		//
+		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py migrate_textquestions",
+			"Failed while the loading data for a default survey questions", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
-			"Failed while the loading data for development_environment", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata product_type",
+		//	"Failed while the loading data for product_type", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata system_settings",
-			"Failed while the loading data for system_settings", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata test_type",
+		//	"Failed while the loading data for test_type", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_type",
-			"Failed while the loading data for benchmark_type", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata development_environment",
+		//	"Failed while the loading data for development_environment", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_category",
-			"Failed while the loading data for benchmark_category", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata system_settings",
+		//	"Failed while the loading data for system_settings", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_requirement",
-			"Failed while the loading data for benchmark_requirement", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_type",
+		//	"Failed while the loading data for benchmark_type", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata language_type",
-			"Failed while the loading data for language_type", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_category",
+		//	"Failed while the loading data for benchmark_category", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata objects_review",
-			"Failed while the loading data for objects_review", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata benchmark_requirement",
+		//	"Failed while the loading data for benchmark_requirement", true)
 
-		addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata regulation",
-			"Failed while the loading data for regulation", true)
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata language_type",
+		//	"Failed while the loading data for language_type", true)
+
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata objects_review",
+		//	"Failed while the loading data for objects_review", true)
+
+		//addCmd(b, "cd "+inst.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata regulation",
+		//	"Failed while the loading data for regulation", true)
 
 		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py import_surveys", "Failed while the running import_surveys",
 		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata initial_surveys", "Failed while the loading data for initial_surveys",

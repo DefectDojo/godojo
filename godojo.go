@@ -37,7 +37,7 @@ var embd embed.FS
 // Global vars
 var (
 	// Installer version
-	ver = "1.1.8"
+	ver = "1.1.9"
 	// Configuration file name
 	cf = "dojoConfig.yml"
 	// Global config struct
