@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/mtesauro/godojo/cmd"
+	"github.com/defectdojo/godojo/cmd"
 )
 
 func main() {
-	// startRefactor
+	// start installer
 	cmd.Main()
 
-	// TODO: Add command-line argument for a specific release e.g. -r 2.19.1 or similar
 }

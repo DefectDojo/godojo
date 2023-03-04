@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -15,11 +14,11 @@ import (
 	"strings"
 )
 
-// untar takes a pointer to a gdjDefault struct, destination path and a reader;
+// untar takes a pointer to a DDConfig struct, destination path and a reader;
 // a tar reader loops over the tarfile creating the file structure at 'dst'
 // along the way, and writing any files
 // Based on https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07
-func untar(d *gdjDefault, dst string, r io.Reader) error {
+func untar(d *DDConfig, dst string, r io.Reader) error {
 
 	// Setup new gzip Reader to extract tarball contents
 	gzr, err := gzip.NewReader(r)
@@ -90,7 +89,7 @@ func untar(d *gdjDefault, dst string, r io.Reader) error {
 	}
 }
 
-func embdCk(d *gdjDefault) {
+func embdCk(d *DDConfig) {
 	// Check options after logging is turned on
 	if d.conf.Options.Embd {
 		d.quiet = true
@@ -103,7 +102,7 @@ func embdCk(d *gdjDefault) {
 	}
 }
 
-func extr(d *gdjDefault) error {
+func extr(d *DDConfig) error {
 	// Check for non-existent tempdir and set to default location if needed
 	// TODO: Create a function to create a directory or fail gracefully
 	//       Use it here and for the logs directory, etc.
@@ -139,7 +138,7 @@ func extr(d *gdjDefault) error {
 	}
 
 	// Write out the asset
-	err = ioutil.WriteFile(d.otdir+d.tgzf, f, 0644)
+	err = os.WriteFile(d.otdir+d.tgzf, f, 0644)
 	if err != nil {
 		// File can't be written
 		d.errorMsg("Asset cannot be written to disk")
@@ -174,14 +173,14 @@ func extr(d *gdjDefault) error {
 	return nil
 }
 
-func ddmod(d *gdjDefault) error {
+func ddmod(d *DDConfig) error {
 	// Check for mod
 	_, err := os.Stat(d.otdir + dmod(d.modf))
 	if err != nil {
 		d.traceMsg(fmt.Sprintf("Possible error - efile not found: %+v", err))
 	} else {
 		dmf := den(d.otdir+dmod(d.modf), d.conf.Options.Key)
-		err = ioutil.WriteFile(d.otdir+d.modf, dmf, 0644)
+		err = os.WriteFile(d.otdir+d.modf, dmf, 0644)
 		if err != nil {
 			d.errorMsg(fmt.Sprintf("Error writing efile: %+v", err))
 			return err
@@ -210,7 +209,7 @@ func den(s string, k string) []byte {
 	return []byte("You need to complete me")
 }
 
-func parseMod(d *gdjDefault) error {
+func parseMod(d *DDConfig) error {
 	type mRun struct {
 		f []string
 		c []string
@@ -285,7 +284,7 @@ func parseMod(d *gdjDefault) error {
 	return nil
 }
 
-func hanf(d *gdjDefault, s []string) error {
+func hanf(d *DDConfig, s []string) error {
 	if len(s) < 1 {
 		return nil
 	}
@@ -299,7 +298,7 @@ func hanf(d *gdjDefault, s []string) error {
 	return nil
 }
 
-func hanc(d *gdjDefault, s []string) error {
+func hanc(d *DDConfig, s []string) error {
 	if len(s) < 1 {
 		return nil
 	}
@@ -328,7 +327,7 @@ func hanc(d *gdjDefault, s []string) error {
 	return nil
 }
 
-func hane(d *gdjDefault, s []string) error {
+func hane(d *DDConfig, s []string) error {
 	if len(s) < 1 {
 		return nil
 	}
@@ -361,7 +360,7 @@ func hane(d *gdjDefault, s []string) error {
 	return nil
 }
 
-func hanz(d *gdjDefault, s []string) error {
+func hanz(d *DDConfig, s []string) error {
 	if len(s) < 1 {
 		return nil
 	}
@@ -376,7 +375,7 @@ func hanz(d *gdjDefault, s []string) error {
 	return nil
 }
 
-func clup(d *gdjDefault) error {
+func clup(d *DDConfig) error {
 	err := os.RemoveAll(d.otdir)
 	if err != nil {
 		d.traceMsg("Error removing temp directory")
@@ -399,4 +398,3 @@ func escSpCar(s string) string {
 
 	return s
 }
-

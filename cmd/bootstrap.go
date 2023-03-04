@@ -12,70 +12,68 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/defectdojo/godojo/distros"
+	c "github.com/mtesauro/commandeer"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
-// bootstrapInstall takes a pointer to a gdjDefault struct and a targetOS struct
+// bootstrapInstall takes a pointer to a DDConfig struct and a targetOS struct
 // to run the commands necessary to bootstrap the installation
-func bootstrapInstall(d *gdjDefault, t *targetOS) {
+func bootstrapInstall(d *DDConfig, t *targetOS) {
 	d.sectionMsg("Bootstrapping the godojo installer")
-	bs := osCmds{}
-	initBootstrap(t.id, &bs)
+
+	// Create new boostrap command package
+	cBootstrap := c.NewPkg("bootstrap")
+
+	// Get commands for the right distro
+	switch {
+	case strings.ToLower(t.distro) == "ubuntu":
+		d.traceMsg("Searching for commands for bootstrapping Ubuntu")
+		err := distros.GetUbuntu(cBootstrap, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to bootstrap target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case strings.ToLower(t.distro) == "rhel":
+		d.traceMsg("Searching for commands for bootstrapping RHEL")
+		err := distros.GetRHEL(cBootstrap, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to bootstrap target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
 
 	// Start the spinner
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Bootstrapping..."
 	d.spin.Start()
 	// Run the boostrapping commands for the target OS
-	for i := range bs.cmds {
+	d.traceMsg(fmt.Sprintf("Getting commands to bootstrap %s", t.id))
+	tCmds, err := distros.CmdsForTarget(cBootstrap, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to bootstrap target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			bs.cmds[i],
-			bs.errmsg[i],
-			bs.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Boostraping godojo installer complete")
 
 }
 
-// initBootstrap takes an id from targetOS and a pointer to a osCmds struct to
-// run the commands needd to bootstrap the OS for installation
-func initBootstrap(id string, b *osCmds) {
-	// TODO: Make this fail for unsupported OSes
-	// TODO: Consider making a bootstrap per Linux distro switching to those here
-	switch strings.ToLower(distOnly(id)) {
-	case "debian":
-		fallthrough
-	case "ubuntu":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get update",
-			"DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
-			"DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" install python3 python3-virtualenv ca-certificates curl gnupg git sudo",
-		}
-		b.errmsg = []string{
-			"Unable to update apt database",
-			"Unable to upgrade OS packages with apt",
-			"Unable to install prerequisites for installer via apt",
-		}
-		b.hard = []bool{
-			true,
-			true,
-			false,
-		}
-
-		return
-	default:
-		fmt.Println("Unsupported OS to bootstrap, quitting.")
-		os.Exit(1)
-
-	}
-}
-
 // validPython checks to ensure the correct version of Python is available
-func validPython(d *gdjDefault) {
+func validPython(d *DDConfig) {
 	d.sectionMsg("Checking for Python 3")
 	if checkPythonVersion(d) {
 		d.statusMsg("Python 3 found, install can continue")
@@ -86,7 +84,7 @@ func validPython(d *gdjDefault) {
 }
 
 // checkPythonVersion verifies that python3 is availble on the install target
-func checkPythonVersion(d *gdjDefault) bool {
+func checkPythonVersion(d *DDConfig) bool {
 	// DefectDojo is now Python 3+, lets make sure that's installed
 	_, err := exec.LookPath("python3")
 	if err != nil {
@@ -109,17 +107,13 @@ func checkPythonVersion(d *gdjDefault) bool {
 	line := strings.Split(string(lines[0]), " ")
 	pyVer := line[1]
 
-	// TODO: Consider checking the minor version of Python3 as well - probably not needed (yet)
-	if strings.HasPrefix(pyVer, "3.") {
-		return true
-	}
-	// DefectDojo requires Python 3.x
-	return false
+	// Return true or false depending on Python version
+	return strings.HasPrefix(pyVer, "3.")
 }
 
-// downloadDojo takes a ponter to gdjDefault and downloads a release or source
+// downloadDojo takes a ponter to DDConfig and downloads a release or source
 // code depending on the configuration of dojoConfig.yml
-func downloadDojo(d *gdjDefault) {
+func downloadDojo(d *DDConfig) {
 	d.sectionMsg("Downloading the source for DefectDojo")
 
 	// Determine if a release or Dojo source will be installed
@@ -153,7 +147,7 @@ func downloadDojo(d *gdjDefault) {
 
 // getDojoRelease retrives the supplied version of DefectDojo from the Git repo
 // and places it in the specified dojoSource directory (default is /opt/dojo)
-func getDojoRelease(d *gdjDefault) error {
+func getDojoRelease(d *DDConfig) error {
 	d.statusMsg(fmt.Sprintf("Downloading the configured release of DefectDojo => version %+v", d.conf.Install.Version))
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Downloading release..."
@@ -193,7 +187,7 @@ func getDojoRelease(d *gdjDefault) error {
 
 	// Setup a custom http client for downloading the Dojo release
 	var ddClient = &http.Client{
-		// Set time to a max of 60 seconds
+		// Set time to a max of 120 seconds
 		Timeout: time.Second * 120,
 	}
 	d.traceMsg("http.Client timeout set to 120 seconds for release download")
@@ -247,7 +241,7 @@ func getDojoRelease(d *gdjDefault) error {
 	return nil
 }
 
-func extractRelease(d *gdjDefault, t string) error {
+func extractRelease(d *DDConfig, t string) error {
 	// Extract the tarball to create the Dojo source directory
 	d.traceMsg("Extracting tarball into the Dojo source directory")
 	tb, err := os.Open(t)
@@ -276,7 +270,7 @@ func extractRelease(d *gdjDefault, t string) error {
 // Use go-git to checkout latest source - either from a specific commit or HEAD
 // on a branch and places it in the specified dojoSource directory
 // (default is /opt/dojo)
-func getDojoSource(d *gdjDefault) error {
+func getDojoSource(d *DDConfig) error {
 	d.statusMsg("Downloading DefectDojo source as a branch or commit from the repo directly")
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Downloading DefectDojo source..."

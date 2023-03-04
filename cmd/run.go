@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func run(d *gdjDefault) {
+func run(d *DDConfig) {
 	// Print the install banner
 	if !(d.quiet || d.conf.Options.Embd) {
 		d.dojoBanner()
@@ -43,6 +43,7 @@ func run(d *gdjDefault) {
 	prepDBForDojo(d, &osTarget)
 
 	// Prepare for Django - virtenv, etc
+	// TODO Convert to Commandeer
 	prepDjango(d, &osTarget)
 
 	// Create settings.py
@@ -51,11 +52,10 @@ func run(d *gdjDefault) {
 	// Setup DefectDojo
 	setupDefectDojo(d, &osTarget)
 
-	fmt.Println("\n More To Be Written")
-	d.statusMsg(fmt.Sprintf("\n\nSuccessfully reached the end of main in godojo version %+v", d.ver))
+	d.statusMsg(fmt.Sprintf("\nSuccessfully installed DefectDojo using godojo version %+v", d.ver))
 }
 
-func setCmdLogging(d *gdjDefault) *log.Logger {
+func setCmdLogging(d *DDConfig) *log.Logger {
 	// Setup OS command logging
 	d.traceMsg("Creating log file for OS command output for debugging reasons")
 	n := time.Now()

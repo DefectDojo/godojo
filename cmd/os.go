@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -14,6 +13,10 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/defectdojo/godojo/distros"
+	c "github.com/mtesauro/commandeer"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // Supported OSes
@@ -24,7 +27,7 @@ type targetOS struct {
 	release string
 }
 
-func checkOS(d *gdjDefault) targetOS {
+func checkOS(d *DDConfig) targetOS {
 	// Check install OS
 	d.sectionMsg("Determining OS for installation")
 
@@ -33,14 +36,15 @@ func checkOS(d *gdjDefault) targetOS {
 	target := targetOS{}
 	determineOS(d, &target)
 
-	// TODO: Need to write a function that takes target and validates it's supporeted by godojo
-	d.statusMsg(fmt.Sprintf("OS was determined to be %+v, %+v", strings.Title(target.os), strings.Title(target.id)))
+	// Use Caser to correctly do the title case for Enlish (golang.org/x/text/cases)
+	c := cases.Title(language.English)
+	d.statusMsg(fmt.Sprintf("OS was determined to be %+v, %+v", c.String(target.os), c.String(target.id)))
 	d.statusMsg("DefectDojo installation on this OS is supported, continuing")
 
 	return target
 }
 
-func determineOS(d *gdjDefault, tOS *targetOS) {
+func determineOS(d *DDConfig, tOS *targetOS) {
 	// Determine OS first
 	tOS.os = runtime.GOOS
 	d.traceMsg(fmt.Sprintf("Determining OS based on GOOS: %+v", tOS.os))
@@ -59,11 +63,9 @@ func determineOS(d *gdjDefault, tOS *targetOS) {
 		d.errorMsg("Windows is not a supported installation platform")
 		os.Exit(1)
 	}
-
-	return
 }
 
-func determineLinux(d *gdjDefault, tOS *targetOS) {
+func determineLinux(d *DDConfig, tOS *targetOS) {
 	// Determine the Linux Distro the installer is running on
 	// Based on Based on https://unix.stackexchange.com/questions/6345/how-can-i-get-distribution-name-and-version-number-in-a-simple-shell-script
 	d.traceMsg("Determining what Linux distro is the target OS")
@@ -74,6 +76,23 @@ func determineLinux(d *gdjDefault, tOS *targetOS) {
 		// That file exists
 		d.traceMsg("Determining Linux distro from /etc/os-release")
 		tOS.distro, tOS.release, tOS.id = parseOSRelease(d, "/etc/os-release")
+		if strings.Contains(strings.ToLower(tOS.distro), "rocky") {
+			d.traceMsg("Linux distro is Rocky Linux")
+			d.traceMsg("Treating Rocky Linux as RHEL for remainder of the install")
+			d.statusMsg("Identified Rocky Linux which is compatible with RHEL.")
+			d.statusMsg("Using RHEL install method going forward...")
+			tOS.distro = "rhel"
+			tOS.release = onlyMajorVer(tOS.release)
+			tOS.id = tOS.distro + ":" + tOS.release
+			return
+		}
+		if strings.Contains(strings.ToLower(tOS.distro), "rhel") {
+			d.traceMsg("Linux distro is RHEL")
+			tOS.distro = "rhel"
+			tOS.release = onlyMajorVer(tOS.release)
+			tOS.id = tOS.distro + ":" + tOS.release
+			return
+		}
 		return
 	}
 
@@ -121,10 +140,12 @@ func determineLinux(d *gdjDefault, tOS *targetOS) {
 		d.errorMsg("Older versions of SuSe Linux are not suppported, quitting")
 		os.Exit(1)
 	}
+
+	// RHEL's way of doing this
 	_, err = os.Stat("/etc/redhat-release")
 	if err == nil {
 		// Distro is too old, not supported
-		d.traceMsg("Older RedHat Linux distro isn't supported by this installer")
+		d.traceMsg("Older RedHat Linux distros aren't supported by this installer")
 		d.errorMsg("Older versions of Redhat Linux are not suppported, quitting")
 		os.Exit(1)
 	}
@@ -134,7 +155,7 @@ func determineLinux(d *gdjDefault, tOS *targetOS) {
 	os.Exit(1)
 }
 
-func parseOSRelease(d *gdjDefault, f string) (string, string, string) {
+func parseOSRelease(d *DDConfig, f string) (string, string, string) {
 	// Setup a map of what we need to what /etc/os-release uses
 	fields := map[string]string{
 		"distro":  "ID",
@@ -146,7 +167,16 @@ func parseOSRelease(d *gdjDefault, f string) (string, string, string) {
 
 }
 
-func parseLsbCmd(d *gdjDefault, cmd string) (string, string, string) {
+func onlyMajorVer(v string) string {
+	major, _, found := strings.Cut(v, ".")
+	if found {
+		return major
+	}
+
+	return "Bad Version Number"
+}
+
+func parseLsbCmd(d *DDConfig, cmd string) (string, string, string) {
 	// Setup map to hold parsed values
 	vals := make(map[string]string)
 
@@ -192,7 +222,7 @@ func parseLsbCmd(d *gdjDefault, cmd string) (string, string, string) {
 	return vals["distro"], vals["release"], vals["distro"] + ":" + vals["release"]
 }
 
-func parseEtcLsb(d *gdjDefault, f string) (string, string, string) {
+func parseEtcLsb(d *DDConfig, f string) (string, string, string) {
 	// Setup a map of what we need to what /etc/lsb-release uses
 	fields := map[string]string{
 		"distro":  "DISTRIB_ID",
@@ -203,7 +233,7 @@ func parseEtcLsb(d *gdjDefault, f string) (string, string, string) {
 	return linMap["distro"], linMap["release"], linMap["distro"] + ":" + linMap["release"]
 }
 
-func parseEtcIss(d *gdjDefault, f string) (string, string, string) {
+func parseEtcIss(d *DDConfig, f string) (string, string, string) {
 	// Setup return map
 	vals := make(map[string]string)
 
@@ -241,7 +271,7 @@ func parseEtcIss(d *gdjDefault, f string) (string, string, string) {
 	return vals["distro"], vals["release"], vals["distro"] + ":" + vals["release"]
 }
 
-func parseEtcDeb(d *gdjDefault, f string) (string, string, string) {
+func parseEtcDeb(d *DDConfig, f string) (string, string, string) {
 	// Setup map to hold parsed values
 	vals := make(map[string]string)
 	vals["distro"] = "debian"
@@ -273,7 +303,7 @@ func parseEtcDeb(d *gdjDefault, f string) (string, string, string) {
 	return vals["distro"], vals["release"], vals["distro"] + ":" + vals["release"]
 }
 
-func parseFile(d *gdjDefault, f string, sep string, flds map[string]string) map[string]string {
+func parseFile(d *DDConfig, f string, sep string, flds map[string]string) map[string]string {
 	// Setup return map
 	vals := make(map[string]string)
 
@@ -315,212 +345,177 @@ func parseFile(d *gdjDefault, f string, sep string, flds map[string]string) map[
 	return vals
 }
 
-// distOnly takes an string such as the targetOS.id and returns only the distro
-// name portion of that id e.g. if sent ubuntu:20.04, ubuntu would be returned
-func distOnly(d string) string {
-	if strings.Contains(d, "ubuntu") {
-		dist := strings.Split(d, ":")
-		return dist[0]
-	}
-	if strings.Contains(d, "debian") {
-		dist := strings.Split(d, ":")
-		return dist[0]
-	}
-	// TODO Add more DISTROS here
-
-	return "Unable-to-parse-distro"
-}
-
-// prepOSForDojo takes a pointer to a gdjDefault struct and a string representing
+// prepOSForDojo takes a pointer to a DDConfig struct and a string representing
 // the id for the target OS and installs the necessary OS software required by
 // DefectDojo
-func prepOSForDojo(d *gdjDefault, o *targetOS) {
+func prepOSForDojo(d *DDConfig, t *targetOS) {
 	// Gather OS commands to bootstrap the install
 	d.sectionMsg("Installing OS packages needed for DefectDojo")
-	osInst := osCmds{}
-	initOSInst(d, o.id, &osInst)
+
+	// Create a new installerprep command package
+	cInstallerPrep := c.NewPkg("installerprep")
+
+	// Get commands for the right distro
+	switch {
+	case t.distro == "ubuntu":
+		//case "ubuntu":
+		d.traceMsg("Searching for commands to prep for the installer on Ubuntu")
+		err := distros.GetUbuntu(cInstallerPrep, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to bootstrap target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case strings.ToLower(t.distro) == "rhel":
+		d.traceMsg("Searching for commands for bootstrapping RHEL")
+		err := distros.GetRHEL(cInstallerPrep, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to bootstrap target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
 
 	// Install the OS packages
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Installing OS packages..."
 	d.spin.Start()
-	// Send commands to install OS packages for Target OS
-	for i := range osInst.cmds {
+	// Run the installer prep commands for the target OS
+	d.traceMsg(fmt.Sprintf("Getting commands to bootstrap %s", t.id))
+	tCmds, err := distros.CmdsForTarget(cInstallerPrep, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to bootstrap target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	// Inject values from config into commands
+	d.injectConfigVals(tCmds)
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			osInst.cmds[i],
-			osInst.errmsg[i],
-			osInst.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Installing OS packages complete")
 }
 
-// initOSInst takes an id from osTarget and a pointer to osCmds struct to add
-// the commands needed for the id provided to prepare the OS for installing
-// DefectDojo
-func initOSInst(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInitOSInst(d, id, b)
-
-	}
-	return
-}
-
-// Commands to bootstrap Ubuntu for the installer
-func ubuntuInitOSInst(d *gdjDefault, id string, b *osCmds) {
-	switch strings.ToLower(id) {
-	case "debian:10":
-		fallthrough
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			fmt.Sprintf("curl -sS %s | apt-key add -", d.yarnGPG),
-			fmt.Sprintf("echo -n %s > /etc/apt/sources.list.d/yarn.list", d.yarnRepo),
-			"DEBIAN_FRONTEND=noninteractive apt-get update",
-			"DEBIAN_FRONTEND=noninteractive apt-get install sudo",
-			fmt.Sprintf("curl -sL %s | bash - ", d.nodeURL),
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https libjpeg-dev gcc libssl-dev python3-dev python3-pip python3-virtualenv yarn build-essential expect libcurl4-openssl-dev",
-		}
-		b.errmsg = []string{
-			"Unable to obtain the gpg key for Yarn",
-			"Unable to add yard repo as an apt source",
-			"Unable to update apt database",
-			"Unable to install sudo",
-			"Unable to install nodejs",
-			"Installing OS packages with apt failed",
-		}
-		b.hard = []bool{
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-		}
-	}
-	return
-}
-
 // prepDjango(d, &osTarget)
-func prepDjango(d *gdjDefault, o *targetOS) {
-	// Prep OS (user, virtualenv, chownership)
+func prepDjango(d *DDConfig, t *targetOS) {
+	// Prep OS for Django framework (user, virtualenv, chownership)
 	d.sectionMsg("Preparing the OS for DefectDojo installation")
-	prepCmds := osCmds{}
-	osPrep(d, o.id, &prepCmds)
-	// Run the OS Prep commands
+
+	// Create new prep Django command package
+	cPrepDjango := c.NewPkg("prepdjango")
+
+	// Get commands for the right distro
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("Searching for commands to prep Django on Ubuntu")
+		err := distros.GetUbuntu(cPrepDjango, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to prep Django target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case t.distro == "rhel":
+		d.traceMsg("Searching for commands to prep Django on RHEL")
+		err := distros.GetRHEL(cPrepDjango, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to prep Django target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
+
+	// Start the spinner
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Preparing the OS for DefectDojo..."
 	d.spin.Start()
-	for i := range prepCmds.cmds {
+	// Run the prep Django commands for the target OS
+	d.traceMsg(fmt.Sprintf("Getting commands to prep Django on %s", t.id))
+	tCmds, err := distros.CmdsForTarget(cPrepDjango, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to bootstrap target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	// Inject values from config into commands
+	d.injectConfigVals(tCmds)
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			prepCmds.cmds[i],
-			prepCmds.errmsg[i],
-			prepCmds.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Preparing the OS complete")
 }
 
-// osPrep
-func osPrep(d *gdjDefault, id string, cmds *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuOSPrep(d, id, cmds)
-	}
-	return
-}
-
-// ubuntuOSPrep
-func ubuntuOSPrep(d *gdjDefault, id string, b *osCmds) {
-	// Setup virutalenv, setup OS User, and chown DefectDojo app root to the dojo user
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"python3 -m virtualenv --python=/usr/bin/python3 " + d.conf.Install.Root,
-			d.conf.Install.Root + "/bin/python3 -m pip install --upgrade pip",
-			d.conf.Install.Root + "/bin/pip3 install -r " + d.conf.Install.Root + "/django-DefectDojo/requirements.txt",
-			"mkdir " + d.conf.Install.Root + "/logs",
-			"/usr/sbin/groupadd -f " + d.conf.Install.OS.Group, // TODO: check with os.Group.Lookup
-			"id " + d.conf.Install.OS.User + " &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g " +
-				d.conf.Install.OS.Group + " " + d.conf.Install.OS.User + "; fi", // TODO: check with os.User.Lookup
-			"chown -R " + d.conf.Install.OS.User + "." + d.conf.Install.OS.Group + " " + d.conf.Install.Root,
-		}
-		b.errmsg = []string{
-			"Unable to setup virtualenv for DefectDojo",
-			"Unable to update pip to latest",
-			"Unable to install Python3 modules for DefectDojo",
-			"Unable to create a directory for logs",
-			"Unable to create a group for DefectDojo OS user",
-			"Unable to create an OS user for DefectDojo",
-			"Unable to change ownership of the DefectDojo app root directory",
-		}
-		b.hard = []bool{
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-			true,
-		}
-	}
-
-	return
-}
-
 // createSettings
-func createSettings(d *gdjDefault, o *targetOS) {
+func createSettings(d *DDConfig, t *targetOS) {
 	// Create settings.py for DefectDojo
+	// TODO: Update this to use local_settings.py
 	d.sectionMsg("Creating settings.py for DefectDojo")
-	settCmds := osCmds{}
-	createSettingsPy(d, o.id, &settCmds)
-	// Run the commands to create settings.py
-	// TODO: Write values to .env.prod file
+
+	// Write out the settings file
+	// TODO: Update this to local_settings.py
+	createSettingsPy(d)
+
+	// Create new create settings command package
+	cCreateSettings := c.NewPkg("createsettings")
+
+	// Get commands for the right distro
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("Searching for commands to create settings on Ubuntu")
+		err := distros.GetUbuntu(cCreateSettings, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to create settings target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case t.distro == "rhel":
+		d.traceMsg("Searching for commands to create settings on RHEL")
+		err := distros.GetRHEL(cCreateSettings, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to create settings target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
+
+	// Start the spinner
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Creating settings.py for DefectDojo..."
 	d.spin.Start()
-	for i := range settCmds.cmds {
+	// Run the create settings commands for the target OS
+	d.traceMsg(fmt.Sprintf("Getting commands to create settings on %s", t.id))
+	tCmds, err := distros.CmdsForTarget(cCreateSettings, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to bootstrap target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	// Inject values from config into commands
+	d.injectConfigVals(tCmds)
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			settCmds.cmds[i],
-			settCmds.errmsg[i],
-			settCmds.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Creating settings.py for DefectDojo complete")
@@ -528,7 +523,7 @@ func createSettings(d *gdjDefault, o *targetOS) {
 }
 
 // createSettingsPy
-func createSettingsPy(d *gdjDefault, id string, cmds *osCmds) {
+func createSettingsPy(d *DDConfig) {
 	// Setup the env.prod file used by settings.py
 
 	// Create the database URL for the env file - https://github.com/kennethreitz/dj-database-url
@@ -550,73 +545,73 @@ func createSettingsPy(d *gdjDefault, id string, cmds *osCmds) {
 	// Setup env file for production
 	genAndWriteEnv(d, dbURL)
 
-	// Create a settings.py for Dojo to use
-	cmds.id = id
-	cmds.cmds = []string{
-		"ln -s " + d.conf.Install.Root + "/django-DefectDojo/dojo/settings " +
-			d.conf.Install.Root + "/customizations",
-		"chown " + d.conf.Install.OS.User + "." + d.conf.Install.OS.Group + " " + d.conf.Install.Root +
-			"/django-DefectDojo/dojo/settings/settings.py",
-	}
-	cmds.errmsg = []string{
-		"Unable to create settings.py file",
-		"Unable to change ownership of settings.py file",
-	}
-	cmds.hard = []bool{
-		true,
-		true,
-	}
-
-	return
 }
 
 // setupDefectDojo
-func setupDefectDojo(d *gdjDefault, o *targetOS) {
-	// Django/Python installs
+func setupDefectDojo(d *DDConfig, t *targetOS) {
 	d.sectionMsg("Setting up Django for DefectDojo")
-	setupDj := osCmds{}
-	setupDjango(d, o.id, &setupDj)
-	// Run the Django commands
+
+	// Do some preliminary work to the install root
+	prepAndPatch(d, t.id)
+
+	// Create new setup DefectDojo command package
+	cSetupDojo := c.NewPkg("setupdojo")
+
+	// Get commands for the right distro
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("Searching for commands to setup DefectDojo on Ubuntu")
+		err := distros.GetUbuntu(cSetupDojo, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to setup DefectDojo on target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case t.distro == "rhel":
+		d.traceMsg("Searching for commands to setup DefectDojo on RHEL")
+		err := distros.GetRHEL(cSetupDojo, t.id)
+		if err != nil {
+			fmt.Printf("Error searching for commands to setup DefectDojo on target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
+
+	// Start the spinner
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Setting up Django for DefectDojo..."
 	d.spin.Start()
-	for i := range setupDj.cmds {
+	// Run the setup DefectDojo commands for the target OS
+	d.traceMsg(fmt.Sprintf("Getting commands to setup DefectDojo on %s", t.id))
+	tCmds, err := distros.CmdsForTarget(cSetupDojo, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to setup DefectDojo on target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	// Inject values from config into commands
+	d.injectConfigVals(tCmds)
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			setupDj.cmds[i],
-			setupDj.errmsg[i],
-			setupDj.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Setting up Django complete")
 }
 
-// setupDjango
-func setupDjango(d *gdjDefault, id string, cmds *osCmds) {
-	// Generate the commands to do the Django install
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuSetupDDjango(d, id, cmds)
-	}
-	return
-}
-
-// ubuntuSetupDDjango
-func ubuntuSetupDDjango(d *gdjDefault, id string, b *osCmds) {
+func prepAndPatch(d *DDConfig, id string) {
 	// Setup expect script needed to set initial admin password
 	d.traceMsg(fmt.Sprintf("Injecting file %s at %s", "setup-superuser.expect", d.conf.Install.Root+"/django-DefectDojo"))
 	// Inject expect script to change admin password
 	terr := injectFile(d, suExpect, d.conf.Install.Root+"/django-DefectDojo", 0755)
 	if terr != nil {
-		fmt.Println("SOMETHING BAD HAPPENED HERE")
+		fmt.Println("Unable to add expect script to installation")
 		fmt.Printf("Error was: %+v\n", terr)
 		os.Exit(1)
 	}
@@ -627,78 +622,18 @@ func ubuntuSetupDDjango(d *gdjDefault, id string, b *osCmds) {
 		d.traceMsg("A failure of patchOMatic may lead to a corrupt install - be warned")
 	}
 
-	// Django installs - migrations, create Django superuser
-	// TODO: Remove this switch to simplify
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		// Add commands to setup DefectDojo - migrations, super user,
-		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations --merge --noinput", "Initial makemgrations failed",
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py makemigrations dojo",
-			"Failed during makemgration dojo", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py migrate",
-			"Failed during database migrate", true)
-
-		// Ensure there's a value for email as the call will fail without one
-		adminEmail := "default.user@defectdojo.org"
-		if len(d.conf.Install.Admin.Email) > 0 {
-			// If user configures an incorrect email, this will still fail but that's on them, not godojo
-			adminEmail = d.conf.Install.Admin.Email
-		}
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py createsuperuser --noinput --username=\""+
-			d.conf.Install.Admin.User+"\" --email=\""+adminEmail+"\"",
-			"Failed while creating DefectDojo superuser", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && "+
-			d.conf.Install.Root+"/django-DefectDojo/setup-superuser.expect "+d.conf.Install.Admin.User+" \""+escSpCar(d.conf.Install.Admin.Pass)+"\"",
-			"Failed while setting the password for the DefectDojo superuser", true)
-
-		// Roles showed up in 2.x.x
-		if onlyAfter(d, 2, 0, 0) {
-			addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata role",
-				"Failed while the loading data for role", true)
-		}
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata "+
-			"system_settings initial_banner_conf product_type test_type development_environment benchmark_type "+
-			"benchmark_category benchmark_requirement language_type objects_review regulation initial_surveys role",
-			"Failed while the loading data for a default install", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py migrate_textquestions",
-			"Failed while the loading data for a default survey questions", true)
-
-		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py import_surveys", "Failed while the running import_surveys",
-		// removed - "cd " + inst.Root + "/django-DefectDojo && source ../bin/activate && python3 manage.py loaddata initial_surveys", "Failed while the loading data for initial_surveys",
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py buildwatson",
-			"Failed while the running buildwatson", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo && source ../bin/activate && python3 manage.py installwatson",
-			"Failed while the running installwatson", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo/components && yarn",
-			"Failed while the running yarn", true)
-
-		addCmd(b, "cd "+d.conf.Install.Root+"/django-DefectDojo/ && source ../bin/activate && python3 manage.py collectstatic --noinput",
-			"Failed while the running collectstatic", true)
-
-		addCmd(b, "chown -R "+d.conf.Install.OS.User+"."+d.conf.Install.OS.Group+" "+d.conf.Install.Root,
-			"Unable to change ownership of the DefectDojo directory", true)
+	// Ensure there's a value for email as the add admin user call will fail without one
+	if len(d.conf.Install.Admin.Email) > 0 {
+		// If user configures an incorrect email, this will still fail but that's on them, not godojo
+		d.conf.Install.Admin.Email = "default.user@defectdojo.org"
 	}
 
-	return
+	// Make sure special characters don't break adding admin user
+	d.conf.Install.Admin.Pass = escSpCar(d.conf.Install.Admin.Pass)
 }
 
 // injectFile
-func injectFile(d *gdjDefault, n string, p string, mask fs.FileMode) error {
+func injectFile(d *DDConfig, n string, p string, mask fs.FileMode) error {
 	// Extract embedded file
 	f, err := embd.ReadFile(n)
 	if err != nil {
@@ -712,7 +647,7 @@ func injectFile(d *gdjDefault, n string, p string, mask fs.FileMode) error {
 	name := strings.Replace(n, "embd/", "", 1)
 
 	// Write the file to disk
-	err = ioutil.WriteFile(p+"/"+name, f, mask)
+	err = os.WriteFile(p+"/"+name, f, mask)
 	if err != nil {
 		// File can't be written
 		return err
@@ -723,54 +658,27 @@ func injectFile(d *gdjDefault, n string, p string, mask fs.FileMode) error {
 	return nil
 }
 
-func patchOMatic(d *gdjDefault) error {
+func patchOMatic(d *DDConfig) error {
 	// If a source or commit install, do no patching
 	if d.conf.Install.SourceInstall {
 		return nil
 	}
 
+	// NOTE: Only 2.0.0 or greater is supported.  This is left as an example if patching is required in future
 	// Check the install version for any needed patches
-	switch d.conf.Install.Version {
-	case "1.15.1":
-		// Replace dojo/tools/factory to work around bug in Python 3.8 - https://bugs.python.org/issue44061
-		_ = injectFile(d, factory2, d.conf.Install.Root+"/django-DefectDojo/dojo/tools", 755)
-		_ = tryCmd(d,
-			"mv -f "+d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory.py "+
-				d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory_py.buggy",
-			"Error renaming factory.py to factory_py.buggy", false)
-		_ = tryCmd(d,
-			"mv -f "+d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory_2.0.3 "+
-				d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory.py",
-			"Error replacing factory.py with updated one from version 2.0.3", false)
-	}
+	//switch d.conf.Install.Version {
+	//case "1.15.1":
+	//	// Replace dojo/tools/factory to work around bug in Python 3.8 - https://bugs.python.org/issue44061
+	//	_ = injectFile(d, factory2, d.conf.Install.Root+"/django-DefectDojo/dojo/tools", 0755)
+	//	_ = tryCmd(d,
+	//		"mv -f "+d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory.py "+
+	//			d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory_py.buggy",
+	//		"Error renaming factory.py to factory_py.buggy", false)
+	//	_ = tryCmd(d,
+	//		"mv -f "+d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory_2.0.3 "+
+	//			d.conf.Install.Root+"/django-DefectDojo/dojo/tools/factory.py",
+	//		"Error replacing factory.py with updated one from version 2.0.3", false)
+	//}
 
 	return nil
-}
-
-//onlyAfter
-func onlyAfter(d *gdjDefault, major int, minor int, patch int) bool {
-	// Split up version
-	vBits := strings.Split(d.ver, ".")
-	if len(vBits) != 3 {
-		d.traceMsg(fmt.Sprintf("Bad version string: %s sent to onlyAfter()", d.ver))
-		return false
-	}
-
-	// Convert version bits
-	vMaj, _ := strconv.Atoi(vBits[0])
-	vMin, _ := strconv.Atoi(vBits[1])
-	vPat, _ := strconv.Atoi(vBits[2])
-
-	//
-	if vMaj < major {
-		return false
-	}
-	if vMin < minor {
-		return false
-	}
-	if vPat < patch {
-		return false
-	}
-
-	return true
 }

@@ -7,13 +7,15 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
+	c "github.com/mtesauro/commandeer"
 )
 
 // godojo default value struct
-type gdjDefault struct {
+type DDConfig struct {
 	ver         string           // Holds the version of godojo
 	cf          string           // Name of the config file
 	conf        dojoConfig       // Global config struct
@@ -42,8 +44,8 @@ type gdjDefault struct {
 	tgzf        string
 }
 
-// Set the godojo defaults in the gdjDefault struct
-func (d *gdjDefault) setGodojoDefaults() {
+// Set the godojo defaults in the DDConfig struct
+func (d *DDConfig) setGodojoDefaults() {
 	d.ver = "1.2.0"
 	d.cf = "dojoConfig.yml"
 
@@ -74,7 +76,7 @@ func (d *gdjDefault) setGodojoDefaults() {
 
 }
 
-func (gd *gdjDefault) prepLogging() io.Writer {
+func (gd *DDConfig) prepLogging() io.Writer {
 	// Setup logging for the installer
 	n := time.Now()
 	when := strconv.Itoa(int(n.UnixNano()))
@@ -117,7 +119,7 @@ func (gd *gdjDefault) prepLogging() io.Writer {
 }
 
 // Output a section message and log the same string
-func (gd *gdjDefault) sectionMsg(s string) {
+func (gd *DDConfig) sectionMsg(s string) {
 	// Pring status message if quiet isn't set
 	if !gd.quiet {
 		fmt.Println("")
@@ -130,7 +132,7 @@ func (gd *gdjDefault) sectionMsg(s string) {
 }
 
 // Output a status message and log the same string
-func (gd *gdjDefault) statusMsg(s string) {
+func (gd *DDConfig) statusMsg(s string) {
 	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if !gd.quiet {
 		fmt.Printf("%s\n", gd.redactatron(s, gd.redact))
@@ -139,7 +141,7 @@ func (gd *gdjDefault) statusMsg(s string) {
 }
 
 // Output a blatant error message and log the string to the error log
-func (gd *gdjDefault) warnMsg(s string) {
+func (gd *DDConfig) warnMsg(s string) {
 	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if !gd.quiet {
 		fmt.Println("")
@@ -152,7 +154,7 @@ func (gd *gdjDefault) warnMsg(s string) {
 }
 
 // Output a blatant error message and log the string to the error log
-func (gd *gdjDefault) errorMsg(s string) {
+func (gd *DDConfig) errorMsg(s string) {
 	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if !gd.quiet {
 		fmt.Println("")
@@ -165,7 +167,7 @@ func (gd *gdjDefault) errorMsg(s string) {
 }
 
 // Log the string as an trace log
-func (gd *gdjDefault) traceMsg(s string) {
+func (gd *DDConfig) traceMsg(s string) {
 	// Pring status message if quiet isn't set & redact sensitive info in redact is true
 	if gd.traceOn {
 		gd.Trace.Println(gd.redactatron(s, gd.redact))
@@ -173,7 +175,7 @@ func (gd *gdjDefault) traceMsg(s string) {
 }
 
 // Output the installer banner
-func (gd *gdjDefault) dojoBanner() {
+func (gd *DDConfig) dojoBanner() {
 	fmt.Println("        ____       ____          __     ____          _      ")
 	fmt.Println("       / __ \\___  / __/__  _____/ /_   / __ \\____    (_)___  ")
 	fmt.Println("      / / / / _ \\/ /_/ _ \\/ ___/ __/  / / / / __ \\  / / __ \\ ")
@@ -186,4 +188,38 @@ func (gd *gdjDefault) dojoBanner() {
 	fmt.Println("  For more information on how goDojo does an install, see:")
 	fmt.Printf("  %s", gd.helpURL)
 	fmt.Println("")
+}
+
+func (gd *DDConfig) getReplacements() map[string]string {
+	// Setup values to replace
+	iv := make(map[string]string)
+
+	// Setup map to inject values for placholders
+	iv["{yarnGPG}"] = gd.conf.Options.YarnGPG                      // Yarn's GPG key URL
+	iv["{yarnRepo}"] = gd.conf.Options.YarnRepo                    // Yarn's package URL
+	iv["{nodeURL}"] = gd.conf.Options.NodeURL                      // Node's URL
+	iv["{conf.Install.Root}"] = gd.conf.Install.Root               // Path where DefectDojo is installed defaults to /opt/dojo
+	iv["{conf.Install.OS.Group}"] = gd.conf.Install.OS.Group       // OS group used by DefectDojo application
+	iv["{conf.Install.OS.User}"] = gd.conf.Install.OS.User         // OS user used by DefectDojo application
+	iv["{conf.Install.Admin.User}"] = gd.conf.Install.Admin.User   // Admin user used by DefectDojo web UI
+	iv["{conf.Install.Admin.Email}"] = gd.conf.Install.Admin.Email // Admin user's email address used by DefectDojo web UI
+	iv["{conf.Install.Admin.Pass}"] = gd.conf.Install.Admin.Pass   // Admin user's password for DefectDojo web UI
+
+	return iv
+}
+
+func (gd *DDConfig) injectConfigVals(cmds []c.SingleCmd) {
+	// Get replacement values
+	confVal := gd.getReplacements()
+
+	// Cycle through commands, making replacements as needed
+	for k := range cmds {
+		for i, v := range confVal {
+			// Check if a replacement is needed
+			if strings.Contains(cmds[k].Cmd, i) {
+				cmds[k].Cmd = strings.ReplaceAll(cmds[k].Cmd, i, v)
+			}
+		}
+	}
+
 }

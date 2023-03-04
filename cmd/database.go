@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/defectdojo/godojo/distros"
+	c "github.com/mtesauro/commandeer"
 )
 
 // Setup a struct to use for DB commands
@@ -23,7 +25,7 @@ type sqlStr struct {
 
 // saneDBConfig checks if the options configured in dojoConfig.yml are
 // possible aka sane and will exist the installer with a message if they are not
-func saneDBConfig(d *gdjDefault) {
+func saneDBConfig(d *DDConfig) {
 	// Remote database that doesn't exist - godojo can't help you here
 	if !d.conf.Install.DB.Local && !d.conf.Install.DB.Exists {
 		d.errorMsg("Remote database which doens't exist was confgiured in dojoConfig.yml.")
@@ -35,495 +37,196 @@ func saneDBConfig(d *gdjDefault) {
 }
 
 // prepDBForDojo
-func installDBForDojo(d *gdjDefault, o *targetOS) {
+func installDBForDojo(d *DDConfig, t *targetOS) {
 	// Handle the case that the DB is local and doesn't exist
 	if !d.conf.Install.DB.Exists {
 		// Note that godojo won't try to install remote databases
-		dbNotExist(d, o)
+		dbNotExist(d, t)
 	}
 
 	// Install DB clients for remote DBs
 	if !d.conf.Install.DB.Local {
-		clientInst := osCmds{}
-		dbClient(d, o.id, &clientInst)
+		dbClient(d, t)
 	}
 
 	// Start the database if local and didn't already exist
 	if d.conf.Install.DB.Local && !d.conf.Install.DB.Exists {
-		dbStart := osCmds{}
-		localDBStart(d, o.id, &dbStart)
+		localDBStart(d, t)
 	}
 
 }
 
-// dbNotExist takes a pointer to a gdjDefault struct and a pointer to targetOS
+// dbNotExist takes a pointer to a DDConfig struct and a pointer to targetOS
 // struct and runs the commands necesary to install a local database of the
 // supported type (PostgreSQL, MySQL, etc)
-func dbNotExist(d *gdjDefault, o *targetOS) {
+func dbNotExist(d *DDConfig, t *targetOS) {
 	// Handle the case that the DB is local and doesn't exist
 	d.sectionMsg("Installing database needed for DefectDojo")
 
-	// Gather OS commands to install the DB
-	dbInst := osCmds{}
-	installDB(d, o.id, &dbInst)
+	// Create a new install DB command package
+	cInstallDB := c.NewPkg("installdb")
+
+	// Get commands for the right distro & DB
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("DB needs to be installed on Ubuntu")
+		err := distros.GetUbuntuDB(cInstallDB, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to install DB on target OS %s was\n", t.id)
+			fmt.Printf("\t%+v\n", err)
+			os.Exit(1)
+		}
+		if strings.ToLower(d.conf.Install.DB.Engine) == "mysql" {
+			d.warnMsg("WARNING: While supported, there is significantly more testing with PostreSQL than MySQL. YMMV.")
+		}
+	case t.distro == "rhel":
+		d.traceMsg("DB needs to be installed on RHEL")
+		err := distros.GetRHELDB(cInstallDB, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to install DB on target OS %s was\n", t.id)
+			fmt.Printf("\t%+v\n", err)
+			os.Exit(1)
+		}
+		if strings.ToLower(d.conf.Install.DB.Engine) == "mysql" {
+			d.warnMsg("WARNING: While supported, there is significantly more testing with PostreSQL than MySQL. YMMV.")
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
 
 	// Run the commands to install the chosen DB
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Installing " + d.conf.Install.DB.Engine + " database for DefectDojo..."
 	d.spin.Start()
-	for i := range dbInst.cmds {
+	// Run the install DB for the target OS
+	tCmds, err := distros.CmdsForTarget(cInstallDB, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to install DB target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			dbInst.cmds[i],
-			dbInst.errmsg[i],
-			dbInst.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Installing Database complete")
 }
 
-// installDB
-func installDB(d *gdjDefault, osTar string, dCmd *osCmds) {
-	// Look at the dbTar and call function to install that DB target
-	switch d.conf.Install.DB.Engine {
-	case "SQLite":
-		// Generate commands to install SQLite
-		instSQLite(d, osTar, dCmd)
-	case "MariaDB":
-		// Generate commands to install MariaDB
-		instMariaDB(d, osTar, dCmd)
-	case "MySQL":
-		// Generate commands to install MySQL
-		instMySQL(d, osTar, dCmd)
-	case "PostgreSQL":
-		// Generate commands to install PostgreSQL
-		instPostgreSQL(d, osTar, dCmd)
-	}
-	return
-}
-
-// instSQLite
-func instSQLite(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInstSQLite(d, id, b)
-	}
-	return
-}
-
-// Commands to install SQLite on Ubuntu
-func ubuntuInstSQLite(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3",
-		}
-		b.errmsg = []string{
-			"Unable to install SQLite",
-		}
-		b.hard = []bool{
-			true,
-		}
-	}
-	d.warnMsg("sqlite is a deprecated database for DefectDojo")
-	return
-}
-
-// instMariaDB
-func instMariaDB(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInstMariaDB(d, id, b)
-	}
-	return
-}
-
-// Commands to install MariaDB on Ubuntu
-func ubuntuInstMariaDB(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server libmariadbclient-dev",
-		}
-		b.errmsg = []string{
-			"Unable to install MariaDB",
-		}
-		b.hard = []bool{
-			true,
-		}
-	}
-	d.warnMsg("MariaDB is an unsupported database for DefectDojo")
-	return
-}
-
-// instMySQL
-func instMySQL(d *gdjDefault, id string, b *osCmds) {
-	d.traceMsg(fmt.Sprintf("Installing MySQL for %s\n", id))
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInstMySQL(d, id, b)
-	}
-	return
-}
-
-// Commands to install MySQL on Ubuntu
-func ubuntuInstMySQL(d *gdjDefault, id string, b *osCmds) {
-	d.traceMsg(fmt.Sprintf("Installing Ubuntu MySQL for %s\n", id))
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev",
-		}
-		b.errmsg = []string{
-			"Unable to install MySQL",
-		}
-		b.hard = []bool{
-			true,
-		}
-	}
-	d.warnMsg("Posgres is the preferred database for DefectDojo")
-	return
-}
-
-// instPostgreSQL
-func instPostgreSQL(d *gdjDefault, id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInstPostgreSQL(d, id, b)
-	}
-	return
-}
-
-// Commands to install PostgreSQL on Ubuntu
-func ubuntuInstPostgreSQL(d *gdjDefault, id string, b *osCmds) {
-	switch strings.ToLower(id) {
-	case "debian:10":
-		fallthrough
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y libpq-dev postgresql postgresql-contrib postgresql-client-common",
-		}
-		b.errmsg = []string{
-			"Unable to install PostgreSQL",
-		}
-		b.hard = []bool{
-			true,
-		}
-	}
-	return
-}
-
 // dbClientInstall
-func dbClient(d *gdjDefault, osTar string, dCmd *osCmds) {
-	// Setup commands for DB clients
-	installDBClient(d, osTar, dCmd)
+func dbClient(d *DDConfig, t *targetOS) {
+	// Handle the case that the DB is local and doesn't exist
+	d.sectionMsg("Installing database client needed for DefectDojo")
+
+	// Create a new install DB client command package
+	cInstallDBClient := c.NewPkg("installdbclient")
+
+	// Get the commands for the right distro & DB
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("DB client needs to be installed on Ubuntu")
+		err := distros.GetUbuntuDB(cInstallDBClient, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to install DB client on target OS %s was\n", t.id)
+			fmt.Printf("\t%+v\n", err)
+			os.Exit(1)
+		}
+	case t.distro == "rhel":
+		d.traceMsg("DB client needs to be installed on RHEL")
+		err := distros.GetRHELDB(cInstallDBClient, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to install DB client on target OS %s was\n", t.id)
+			fmt.Printf("\t%+v\n", err)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
 
 	// Run the commands to install the chosen DB
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Installing " + d.conf.Install.DB.Engine + " database client for DefectDojo..."
 	d.spin.Start()
-	for i := range dCmd.cmds {
+	// Run the install DB client for the target OS
+	tCmds, err := distros.CmdsForTarget(cInstallDBClient, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to install DB target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			dCmd.cmds[i],
-			dCmd.errmsg[i],
-			dCmd.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Installing Database client complete")
 
 }
 
-// installDBClient
-func installDBClient(d *gdjDefault, osTar string, dCmd *osCmds) {
-	// Look at the dbTar and call function to install that DB target
-	switch d.conf.Install.DB.Engine {
-	case "SQLite":
-		// Generate commands to install SQLite
-		// A remote SQLite DB makes no sense
-		d.warnMsg("A remote sqlite database makes no sense.")
-		return
-	case "MariaDB":
-		// Generate commands to install MariaDB
-		// TODO: Write install for MariaDB client
-		//instMariaDBClient(osTar, dCmd)
-		d.warnMsg("MariaDB is not a supported DefectDojo databse")
-		return
-	case "MySQL":
-		// Generate commands to install MySQL
-		// TODO: Write install for MySQL client
-		//instMySQLClient(osTar, dCmd)
-		d.warnMsg("MySQL client install has not been implemented")
-		return
-	case "PostgreSQL":
-		// Generate commands to install PostgreSQL
-		instPostgreSQLClient(osTar, dCmd)
-	}
-	return
-}
-
-// instPostgreSQLClient
-func instPostgreSQLClient(id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuInstPostgreSQLClient(id, b)
-	}
-	return
-}
-
-// ubuntuInstPostgreSQLClient
-func ubuntuInstPostgreSQLClient(id string, b *osCmds) {
-	switch id {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		b.id = id
-		b.cmds = []string{
-			"DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
-			"/usr/sbin/groupadd -f postgres",                         // TODO: consider using os.Group.Lookup before calling this
-			"/usr/sbin/useradd -s /bin/bash -m -g postgres postgres", // TODO: consider using os.User.Lookup before calling this
-		}
-		b.errmsg = []string{
-			"Unable to install PostgreSQL client",
-			"Unable to add postgres group",
-			"Unable to add postgres user",
-		}
-		b.hard = []bool{
-			true,
-			true,
-			false, // incase there is an existing postgres user, useradd returns a 9 exit code
-		}
-	}
-	return
-}
-
 // localDBStart
-func localDBStart(d *gdjDefault, id string, c *osCmds) {
+func localDBStart(d *DDConfig, t *targetOS) {
 	// Handle the case that the DB is local and doesn't exist
 	d.sectionMsg("Starting the database needed for DefectDojo")
 
-	// Gather OS commands to install the DB
-	startDB(d, id, c)
+	// Create new boostrap command package
+	cStartDB := c.NewPkg("startdb")
+
+	// Get commands for the right distro
+	switch {
+	case t.distro == "ubuntu":
+		d.traceMsg("Searching for commands to start MySQL under Ubuntu")
+		err := distros.GetUbuntuDB(cStartDB, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to start database under target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	case t.distro == "rhel":
+		d.traceMsg("Searching for commands to start MySQL under RHEL")
+		err := distros.GetRHELDB(cStartDB, t.id, d.conf.Install.DB.Engine)
+		if err != nil {
+			fmt.Printf("Error searching for commands to start database under target OS %s\n", t.id)
+			os.Exit(1)
+		}
+	default:
+		d.traceMsg(fmt.Sprintf("Distro identified (%s) is not supported", t.id))
+		fmt.Printf("Distro identified by godojo (%s) is not supported, exiting...\n", t.id)
+		os.Exit(1)
+	}
 
 	// Run the commands to install the chosen DB
 	d.spin = spinner.New(spinner.CharSets[34], 100*time.Millisecond)
 	d.spin.Prefix = "Starting " + d.conf.Install.DB.Engine + " database for DefectDojo..."
 	d.spin.Start()
-	for i := range c.cmds {
+	// Run the start DB command(s) for the target OS
+	tCmds, err := distros.CmdsForTarget(cStartDB, t.id)
+	if err != nil {
+		fmt.Printf("Error getting commands to start DB on target OS %s\n", t.id)
+		os.Exit(1)
+	}
+
+	for i := range tCmds {
 		sendCmd(d,
 			d.cmdLogger,
-			c.cmds[i],
-			c.errmsg[i],
-			c.hard[i])
+			tCmds[i].Cmd,
+			tCmds[i].Errmsg,
+			tCmds[i].Hard)
 	}
 	d.spin.Stop()
 	d.statusMsg("Starting Database complete")
 }
 
-// startDB
-func startDB(d *gdjDefault, osTar string, dbCmd *osCmds) {
-	// Look at the dbTar and call function to install that DB target
-	switch d.conf.Install.DB.Engine {
-	case "SQLite":
-		startSQLite(osTar, dbCmd)
-	case "MariaDB":
-		startMariaDB(osTar, dbCmd)
-	case "MySQL":
-		startMySQL(osTar, dbCmd)
-	case "PostgreSQL":
-		startPostgres(osTar, dbCmd)
-	}
-	return
-}
-
-func startSQLite(osTar string, dbCmd *osCmds) {
-	// Generate commands to start SQLite
-	switch osTar {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		dbCmd.id = osTar
-		dbCmd.cmds = []string{
-			"echo 'Nothing to start for SQLite'",
-		}
-		dbCmd.errmsg = []string{
-			"Starting SQLite should never error since there's nothing to start",
-		}
-		dbCmd.hard = []bool{
-			true,
-		}
-	}
-}
-
-func startMariaDB(osTar string, dbCmd *osCmds) {
-	// Generate commands to start MariaDB
-	switch osTar {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		dbCmd.id = osTar
-		// TODO: Propably time to convert this to systemctl calls
-		//       also consider enabling the service just in case
-		dbCmd.cmds = []string{
-			"service mysql start",
-		}
-		dbCmd.errmsg = []string{
-			"Unable to start MariaDB",
-		}
-		dbCmd.hard = []bool{
-			true,
-		}
-	}
-}
-
-func startMySQL(osTar string, dbCmd *osCmds) {
-	// Generate commands to start MySQL
-	switch osTar {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		dbCmd.id = osTar
-		// TODO: Propably time to convert this to systemctl calls
-		//       also consider enabling the service just in case
-		dbCmd.cmds = []string{
-			"service mysql start",
-		}
-		dbCmd.errmsg = []string{
-			"Unable to start MySQL",
-		}
-		dbCmd.hard = []bool{
-			true,
-		}
-	}
-}
-
-func startPostgres(osTar string, dbCmd *osCmds) {
-	// Generate commands to start PostgreSQL
-	switch osTar {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		dbCmd.id = osTar
-		// TODO: Propably time to convert this to systemctl calls
-		//       also consider enabling the service just in case
-		dbCmd.cmds = []string{
-			"/usr/sbin/service postgresql start",
-		}
-		dbCmd.errmsg = []string{
-			"Unable to start PostgreSQL",
-		}
-		dbCmd.hard = []bool{
-			true,
-		}
-	}
-}
-
 // prepDBForDojo
-func prepDBForDojo(d *gdjDefault, o *targetOS) {
+func prepDBForDojo(d *DDConfig, t *targetOS) {
 	// Preapare the database for DefectDojo by:
 	// (1) Checking connectivity to the DB,
 	// (2) checking that the configured Dojo database name doesn't exit already
@@ -531,48 +234,36 @@ func prepDBForDojo(d *gdjDefault, o *targetOS) {
 	// (5) Add the DB user for DefectDojo to use
 	// TODO: Validate this against @owasp - https://docs.google.com/spreadsheets/d/1HuXh3Zr4mrmb6_YmKkDgzl-ZINYZCvVZn31UCqIGpUA/edit#gid=0
 	d.sectionMsg("Preparing the database needed for DefectDojo")
-	err := dbPrep(d, o.id)
+	err := dbPrep(d, t)
 	if err != nil {
 		d.errorMsg(fmt.Sprintf("%+v", err))
 		os.Exit(1)
 	}
 
+	// Start the installed DB
+	if d.conf.Install.DB.Local {
+		d.traceMsg("Starting the local DB")
+		localDBStart(d, t)
+	}
+
 }
 
 // dbPrep
-func dbPrep(d *gdjDefault, osTar string) error {
+func dbPrep(d *DDConfig, t *targetOS) error {
 	// Call the necessary function for the supported DB engines
 	switch d.conf.Install.DB.Engine {
-	case "SQLite":
-		// Generate commands to install SQLite
-		return prepSQLite()
-	case "MariaDB":
-		// Generate commands to install MariaDB
-		return prepMariaDB()
 	case "MySQL":
 		// Generate commands to install MySQL
-		return prepMySQL(d, osTar)
+		return prepMySQL(d, t.id)
 	case "PostgreSQL":
 		// Generate commands to install PostgreSQL
-		return prepPostgreSQL(d, osTar)
+		return prepPostgreSQL(d, t)
 	}
 	// Shouldn't get here but if we do, it's definitely an error
 	return errors.New("Unknown database engine configured, cannot check connectivity")
 }
 
-func prepSQLite() error {
-	// Open a connection the the configured SQLite DB
-	// https://github.com/mattn/go-sqlite3#dsn-examples
-	// TODO - write this code and test it
-	return errors.New("Not implemented yet")
-}
-
-func prepMariaDB() error {
-	// TODO - Decide if this should even be supported
-	return errors.New("Not implemented yet")
-}
-
-func prepMySQL(d *gdjDefault, osTar string) error {
+func prepMySQL(d *DDConfig, osTar string) error {
 	// TODO: Path check any binaries called
 	//       * mysql
 	// TODO: Check MySQL version and handle MySQL 8 and password format change
@@ -757,7 +448,7 @@ func prepMySQL(d *gdjDefault, osTar string) error {
 	return nil
 }
 
-func runMySQLCmd(d *gdjDefault, c sqlStr) ([]string, error) {
+func runMySQLCmd(d *DDConfig, c sqlStr) ([]string, error) {
 	out := make([]string, 1)
 	d.traceMsg(fmt.Sprintf("MySQL query: %s", c.sql))
 	DBCmds := osCmds{
@@ -771,23 +462,24 @@ func runMySQLCmd(d *gdjDefault, c sqlStr) ([]string, error) {
 		hard:   []bool{false},
 	}
 
-	// Swicht on how to run the command aka runCmds, tryCmds, inspectCmds
-	err := errors.New("")
+	// Switch on how to run the command aka runCmds, tryCmds, inspectCmds
 	switch c.kind {
 	case "try":
-		err = tryCmds(d, DBCmds)
+		err := tryCmds(d, DBCmds)
+		if err != nil {
+			d.traceMsg(fmt.Sprintf("Error running MySQL command - %s", c.sql))
+			return out, err
+		}
 	case "inspect":
-		out, err = inspectCmds(d, DBCmds)
+		out, err := inspectCmds(d, DBCmds)
+		if err != nil {
+			d.traceMsg(fmt.Sprintf("Error running MySQL command - %s", c.sql))
+			return out, err
+		}
 	default:
 		d.traceMsg("Invalid 'kind' sent to runMySQLCmd, bug in godojo")
-		fmt.Println("Bug discovered in godojo, see trace message. Quitting.")
+		fmt.Println("Bug discovered in godojo, see trace message or re-run with trace logging. Quitting.")
 		os.Exit(1)
-	}
-
-	// Handle errors from running the MySQL command
-	if err != nil {
-		d.traceMsg(fmt.Sprintf("Error running MySQL command - %s", c.sql))
-		return out, err
 	}
 
 	return out, nil
@@ -802,7 +494,7 @@ func squishSlice(sl []string) string {
 	return str
 }
 
-func prepPostgreSQL(d *gdjDefault, osTar string) error {
+func prepPostgreSQL(d *DDConfig, t *targetOS) error {
 	// TODO: Path check any binaries called
 	//       * postgres
 
@@ -814,25 +506,31 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 	if d.conf.Install.DB.Local && !d.conf.Install.DB.Exists {
 		// Determine default access for fresh install of that OS
 		// AKA databse is local and didn't exist before the install
-		creds = defaultDBCreds(d, osTar)
+		creds = defaultDBCreds(d, t.id)
 		d.addRedact(creds["pass"])
 	}
 	d.traceMsg(fmt.Sprintf("DB Creds are now %s / %s", creds["user"], creds["pass"]))
 
+	// Update pg_hba.conf for RHEL only (shakes fist at RHEL)
+	if !updatePgHba(d, t) {
+		d.traceMsg("Failed to update pg_hba.conf, cannot connect to the DB. Quiting install")
+		return errors.New("Unable to update pg_hba.conf so SQL to the DB will fail.  Exiting")
+	}
+
 	// Use pg_isready to check connectivity to PostgreSQL DB
 	d.statusMsg("Checking connectivity to PostgreSQL")
 
-	t, err := isPgReady(d, creds)
+	readyOut, err := isPgReady(d, creds)
 	if err != nil {
 		d.traceMsg(fmt.Sprintf("PostgreSQL is not available, error was %+v", err))
 		return err
 	}
-	d.traceMsg(fmt.Sprintf("Output from pgReady: %+v", t))
+	d.traceMsg(fmt.Sprintf("Output from pgReady: %+v", readyOut))
 
 	d.statusMsg("Validating DB connection settings")
 	// Check connectivity to DB
 	conCk := sqlStr{
-		os:     osTar,
+		os:     t.id,
 		sql:    "\\l",
 		errMsg: "Unable to connect to the configured Postgres database",
 		creds:  creds,
@@ -850,7 +548,7 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 		d.traceMsg("Dropping any existing database per Install.DB.Drop=True in dojoConfig.yml")
 		// Query PostgreSQL to see if the configured database name exists already
 		dbCk := sqlStr{
-			os:     osTar,
+			os:     t.id,
 			sql:    "\\l",
 			errMsg: "Unable to check for existing DefectDojo PostgreSQL database",
 			creds:  creds,
@@ -872,7 +570,7 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 		if ck == 1 {
 			d.traceMsg("DB EXISTS so droping that sucker")
 			dropDB := sqlStr{
-				os:     osTar,
+				os:     t.id,
 				sql:    "DROP DATABASE IF EXISTS " + d.conf.Install.DB.Name + ";",
 				errMsg: "Unable to drop the existing PostgreSQL database",
 				creds:  creds,
@@ -892,7 +590,7 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 	// Create the DefectDojo database if it doesn't already exist
 	d.traceMsg("Creating database for DefectDojo on PostgreSQL")
 	createDB := sqlStr{
-		os:     osTar,
+		os:     t.id,
 		sql:    "CREATE DATABASE " + d.conf.Install.DB.Name + ";",
 		errMsg: "Unable to create a new PostgreSQL database for DefectDojo",
 		creds:  creds,
@@ -901,13 +599,14 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 	_, err = runPgSQLCmd(d, createDB)
 	if err != nil {
 		d.traceMsg("Failed to create new database for DefectDojo to use")
-		return err
+		// TODO: DEGUGGING
+		//return err
 	}
 
 	// Drop user DefectDojo uses to connect to the database
 	d.traceMsg("Dropping existing DefectDojo PostgreSQL DB user, if any")
 	dropUsr := sqlStr{
-		os:     osTar,
+		os:     t.id,
 		sql:    "DROP USER IF EXISTS " + d.conf.Install.DB.User + ";",
 		errMsg: "Unable to delete existing database user for DefectDojo or one didn't exist",
 		creds:  creds,
@@ -925,7 +624,7 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 	// Create user for DefectDojo to use to connect to the database
 	d.traceMsg("Creating PostgreSQL DB user for DefectDojo")
 	createUsr := sqlStr{
-		os: osTar,
+		os: t.id,
 		sql: "CREATE USER " + d.conf.Install.DB.User + " WITH ENCRYPTED PASSWORD '" +
 			d.conf.Install.DB.Pass + "';",
 		errMsg: "Unable to create a PostgreSQL database user for DefectDojo",
@@ -938,14 +637,16 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 		return err
 	}
 
-	d.statusMsg("Note: pg_hba.conf has not been altered by godojo.")
-	d.statusMsg("      It may need to be updated to allow DefectDojo to connect to the DB.")
-	d.statusMsg("      Please consult the PostgreSQL documentation for further information.")
-
+	// Remote DBs cannot have their pg_hba.conf modified (duh)
+	if !d.conf.Install.DB.Local {
+		d.statusMsg("Note: pg_hba.conf has not been altered by godojo.")
+		d.statusMsg("      It may need to be updated to allow DefectDojo to connect to the DB.")
+		d.statusMsg("      Please consult the PostgreSQL documentation for further information.")
+	}
 	// Grant the DefectDojo db user the necessary privileges
 	d.traceMsg("Granting privileges to DefectDojo PostgreSQL DB user")
 	grantPrivs := sqlStr{
-		os:     osTar,
+		os:     t.id,
 		sql:    "GRANT ALL PRIVILEGES ON DATABASE " + d.conf.Install.DB.Name + " TO " + d.conf.Install.DB.User + ";",
 		errMsg: "Unable to grant needed privileges to database user for DefectDojo",
 		creds:  creds,
@@ -967,12 +668,12 @@ func prepPostgreSQL(d *gdjDefault, osTar string) error {
 	return nil
 }
 
-func runPgSQLCmd(d *gdjDefault, c sqlStr) ([]string, error) {
+func runPgSQLCmd(d *DDConfig, c sqlStr) ([]string, error) {
 	out := make([]string, 1)
 	d.traceMsg(fmt.Sprintf("Postgres query: %s", c.sql))
 	DBCmds := osCmds{
 		id: c.os,
-		cmds: []string{"sudo -u postgres PGPASSWORD=\"" + c.creds["pass"] + "\"" +
+		cmds: []string{"sudo -i -u postgres PGPASSWORD=\"" + c.creds["pass"] + "\"" +
 			" psql --host=" + d.conf.Install.DB.Host +
 			" --username=" + c.creds["user"] +
 			" --port=" + strconv.Itoa(d.conf.Install.DB.Port) +
@@ -982,28 +683,109 @@ func runPgSQLCmd(d *gdjDefault, c sqlStr) ([]string, error) {
 	}
 
 	// Swicht on how to run the command aka runCmds, tryCmds, inspectCmds
-	err := errors.New("")
 	switch c.kind {
 	case "try":
-		err = tryCmds(d, DBCmds)
+		err := tryCmds(d, DBCmds)
+		// Handle errors from running the PostgreSQL command
+		if err != nil {
+			d.traceMsg(fmt.Sprintf("Error running Posgres command - %s", c.sql))
+			return out, err
+		}
 	case "inspect":
-		out, err = inspectCmds(d, DBCmds)
+		out, err := inspectCmds(d, DBCmds)
+		// Handle errors from running the PostgreSQL command
+		if err != nil {
+			d.traceMsg(fmt.Sprintf("Error running Posgres command - %s", c.sql))
+			return out, err
+		}
 	default:
 		d.traceMsg("Invalid 'kind' sent to runPgSQLCmd, bug in godojo")
 		fmt.Println("Bug discovered in godojo, see trace message. Quitting.")
 		os.Exit(1)
 	}
 
-	// Handle errors from running the PostgreSQL command
-	if err != nil {
-		d.traceMsg(fmt.Sprintf("Error running Posgres command - %s", c.sql))
-		return out, err
-	}
-
 	return out, nil
 }
 
-func isPgReady(d *gdjDefault, creds map[string]string) (string, error) {
+func updatePgHba(d *DDConfig, t *targetOS) bool {
+	// Only RHEL and binary compatible distros (e.g. Rocky Linux) need to have pg_hba.conf modified)
+	if !strings.Contains(t.distro, "rhel") {
+		// return early
+		return true
+	}
+
+	d.traceMsg("RHEL or variant - pg_hba.conf needs to be updated.")
+	f, err := os.OpenFile("/var/lib/pgsql/data/pg_hba.conf", os.O_RDWR, 0600)
+	if err != nil {
+		// Exit with error code if we can't read the default creds file
+		d.errorMsg("Unable to read pg_hba.conf file, cannot continue")
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	//// Create a new bufferend reader
+	fr := bufio.NewReader(f)
+
+	// Use a scanner to run through the config file to update access
+	scanner := bufio.NewScanner(fr)
+	content := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "127.0.0.1/32") {
+			line = strings.Replace(line, "ident", "md5", 1)
+			d.traceMsg("Replaced IPv4 localhost")
+		}
+		if strings.Contains(line, "::1/128") {
+			line = strings.Replace(line, "ident", "md5", 1)
+			d.traceMsg("Replaced IPv6 localhost")
+		}
+
+		content += line + "\n"
+	}
+
+	if err = scanner.Err(); err != nil {
+		// Exit with error code if we can't scan the default creds file
+		d.errorMsg("Unable to scan the pg_hba.conf file, exiting")
+		os.Exit(1)
+	}
+
+	// Truncate the file to make sure its empty before writing
+	f.Truncate(0)
+
+	// Write new config file by starting at the begining of the file
+	_, err = f.WriteAt([]byte(content), 0)
+	if err != nil {
+		// Exit with error code if we can't scan the default creds file
+		d.errorMsg("Unable to write the pg_hba.conf file, exiting")
+		os.Exit(1)
+	}
+	d.traceMsg("Wrote the updated config file")
+
+	// Reload pg_hba.conf using a SQL statement
+	d.traceMsg("Re-reading the pg_hba.conf file")
+	creds := map[string]string{"user": d.conf.Install.DB.Ruser, "pass": d.conf.Install.DB.Rpass}
+	DBCmds := osCmds{
+		id: t.id,
+		cmds: []string{"sudo -i -u postgres PGPASSWORD=\"" + creds["pass"] + "\"" +
+			" psql " + " --username=" + creds["user"] +
+			" --port=" + strconv.Itoa(d.conf.Install.DB.Port) +
+			" --command=\"SELECT pg_reload_conf();\""},
+		errmsg: []string{"Unable to reload the pg_hba.conf file"},
+		hard:   []bool{false},
+	}
+	err = tryCmds(d, DBCmds)
+	if err != nil {
+		d.traceMsg("Unable to reload the pg_hba.conf file")
+		d.errorMsg("Unable to reload the pg_hba.conf file, exiting")
+		os.Exit(1)
+	}
+	d.traceMsg("Restarted PostgreSQL")
+
+	return true
+}
+
+// TODO: REPLACE THIS WITH CLIENT CALLS
+func isPgReady(d *DDConfig, creds map[string]string) (string, error) {
 	d.traceMsg("isPgReady called")
 
 	// Call ps_isready and check exit code
@@ -1031,7 +813,7 @@ func isPgReady(d *gdjDefault, creds map[string]string) (string, error) {
 
 // Parse a list of existng PostgreSQL DBs for a specific DB name
 // if the DB name is found, return 1 else return 0
-func pgParseDBList(d *gdjDefault, tbl string) int {
+func pgParseDBList(d *DDConfig, tbl string) int {
 	d.traceMsg(fmt.Sprintf("Parsing DB list for existing DefectDojo DB named  %+v", d.conf.Install.DB.Name))
 
 	// Create a slice for matches
@@ -1074,134 +856,40 @@ func pgParseDBList(d *gdjDefault, tbl string) int {
 	return 0
 }
 
-func trimRequirementsTxt(d *gdjDefault, dbUsed string) error {
+func trimRequirementsTxt(d *DDConfig, dbUsed string) error {
 	d.traceMsg("Called trimRequirementsTxt")
 
-	req := make([]string, 1)
-	switch dbUsed {
-	case "MySQL":
-		d.traceMsg("MySQL requirements fix")
-		req[0] = "psycopg2-binary"
-		// append any additional requirements
-	case "PostgreSQL":
-		d.traceMsg("PostgreSQL requirements fix")
-		req[0] = "mysqlclient"
-		// append any additional requirements
-	default:
-		return errors.New("Unknown database provided to trimRequirementsTxt()")
-	}
-
-	d.traceMsg("No error return from trimRequirementsTxt")
-	return removeRequirement(d, req)
-}
-
-func removeRequirement(d *gdjDefault, r []string) error {
-	d.traceMsg("Called removeRequirement")
-
-	// Set th path for requirements.txt
-	p := d.conf.Install.Root + "/" + d.conf.Install.Source + "/"
-
-	cyaCopy := osCmds{
-		id:     "Linux",
-		cmds:   []string{"cp " + p + "requirements.txt " + p + "requirements.cya"},
-		errmsg: []string{"Unable to make a cya copy of requirements.txt"},
-		hard:   []bool{false},
-	}
-
-	err := tryCmds(d, cyaCopy)
-	if err != nil {
-		d.traceMsg("Failed creating a backup copy of requirements.txt")
-		return err
-	}
-
-	// Open requirements.txt
-	f, err := os.OpenFile(p+"requirements.txt", os.O_RDWR, 0744)
-	if err != nil {
-		d.traceMsg("Unable to open requirements.txt")
-		return err
-	}
-	defer f.Close()
-
-	// Scan the file for a match
-	newf := ""
-	skip := ""
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		line := s.Text()
-		// Run through Python modules to remove from requirements.txt
-		for _, v := range r {
-			if !strings.Contains(line, v) {
-				d.traceMsg(fmt.Sprintf("Keeping requirements line: %+v", line))
-				newf += line + "\n"
-			} else {
-				d.traceMsg(fmt.Sprintf("Skiping requirements line: %+v", line))
-				skip += "#\n"
-			}
-		}
-
-	}
-
-	// Clearn the file contents
-	err = f.Truncate(0)
-	if err != nil {
-		d.traceMsg("Unable to truncate requirements.txt file")
-		return err
-	}
-
-	// Add a couple of extra lines just in case
-	skip += "# File re-written by godojo\n"
-	newf += skip
-
-	// Write resulting file
-	_, err = f.WriteAt([]byte(newf), 0)
-	if err != nil {
-		d.traceMsg("Unable to write new requirements.txt file")
-		return err
-	}
-
-	d.traceMsg("No error return from removeRequirement")
+	d.traceMsg("WARNING trimRequirementsTxt is deprecated")
 	return nil
+
 }
 
-func defaultDBCreds(d *gdjDefault, os string) map[string]string {
+func defaultDBCreds(d *DDConfig, os string) map[string]string {
 	// Setup a map to return
 	creds := map[string]string{"user": "foo", "pass": "bar"}
 
-	// Get the default creds based on OS
-	switch os {
-	case "ubuntu:18.04":
-		fallthrough
-	case "ubuntu:20.04":
-		fallthrough
-	case "ubuntu:20.10":
-		fallthrough
-	case "ubuntu:21.04":
-		fallthrough
-	case "ubuntu:22.04":
-		ubuntuDefaultDBCreds(d, creds)
-	}
+	getDefaultDBCreds(d, creds)
 
 	return creds
 }
 
 // Determine the default creds for a database freshly installed in Ubuntu
-func ubuntuDefaultDBCreds(d *gdjDefault, creds map[string]string) {
+func getDefaultDBCreds(d *DDConfig, creds map[string]string) {
 	// Installer currently assumes the default DB passwrod handling won't change by release
 	// Switch on the DB type
 	switch d.conf.Install.DB.Engine {
 	case "MySQL":
 		ubuntuDefaultMySQL(d, creds)
+		d.warnMsg("MySQL default credentials are not implemented for RHEL Linux")
 	case "PostgreSQL":
 		// Set creds as the Ruser & Rpass for Postgres
 		creds["user"] = d.conf.Install.DB.Ruser
 		creds["pass"] = d.conf.Install.DB.Rpass
-		ubuntuDefaultPgSQL(d, creds)
+		setDefaultPgSQL(d, creds)
 	}
-
-	return
 }
 
-func ubuntuDefaultMySQL(d *gdjDefault, c map[string]string) {
+func ubuntuDefaultMySQL(d *DDConfig, c map[string]string) {
 	// Sent some initial values that ensure the connection will fail if the file read fails
 	c["user"] = "debian-sys-maint"
 	c["pass"] = "FAIL"
@@ -1238,8 +926,8 @@ func ubuntuDefaultMySQL(d *gdjDefault, c map[string]string) {
 
 }
 
-func ubuntuDefaultPgSQL(d *gdjDefault, creds map[string]string) {
-	d.traceMsg("Called ubuntuDefaultPgSQL")
+func setDefaultPgSQL(d *DDConfig, creds map[string]string) {
+	d.traceMsg("Called setDefaultPgSQL")
 
 	// Set user to postgres as that's the default DB user for any new install
 	creds["user"] = "postgres"
@@ -1247,7 +935,7 @@ func ubuntuDefaultPgSQL(d *gdjDefault, creds map[string]string) {
 	// Use the default local OS user to set the postgres DB user
 	pgAlter := osCmds{
 		id:     "linux",
-		cmds:   []string{"sudo -u postgres psql -c \"ALTER USER postgres with encrypted password '" + creds["pass"] + "';\""},
+		cmds:   []string{"sudo -i -u postgres psql -c \"ALTER USER postgres with encrypted password '" + creds["pass"] + "';\""},
 		errmsg: []string{"Unable to set initial password for PostgreSQL database user postgres"},
 		hard:   []bool{false},
 	}
@@ -1260,6 +948,5 @@ func ubuntuDefaultPgSQL(d *gdjDefault, creds map[string]string) {
 		os.Exit(1)
 	}
 
-	d.traceMsg("No error return from ubuntuDefaultPgSQL")
-	return
+	d.traceMsg("No error return from setDefaultPgSQL")
 }

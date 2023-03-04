@@ -110,7 +110,7 @@ type envVals struct {
 	DD_PORT_SCAN_SOURCE_IP                string
 }
 
-func genAndWriteEnv(d *gdjDefault, dbURL string) {
+func genAndWriteEnv(d *DDConfig, dbURL string) {
 	// Generate randon values for the two keys below
 	secretKey := d.conf.Settings.SecretKey
 	if len(secretKey) < 28 {
@@ -179,6 +179,4 @@ func genAndWriteEnv(d *gdjDefault, dbURL string) {
 		d.errorMsg("Failed to create .env.prod from template")
 		os.Exit(1)
 	}
-
-	return
 }

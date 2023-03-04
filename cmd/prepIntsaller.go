@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-// prepInstaller takes a pointer to a gdjDefault struct and prepares for the
+// prepInstaller takes a pointer to a DDConfig struct and prepares for the
 // installation by reading command-line args, making changes to the default
 // based on command-line arguments and reading the environmental variables to
 // override values from the config file
-func prepInstaller(d *gdjDefault) {
+func prepInstaller(d *DDConfig) {
 	// Read the command-line arguments
 	readArgs(d)
 
@@ -52,7 +52,7 @@ func prepInstaller(d *gdjDefault) {
 
 // defaultConfig takes no arguements and setups a godojo installation to uses
 // all the defaults in the config file
-func defaultConfig(d *gdjDefault) {
+func defaultConfig(d *DDConfig) {
 	d.traceMsg("Inside of defaultConfig")
 	// Temporarily write out the config file into current working directory
 	writeDefaultConfig(d.cf, false)
@@ -77,21 +77,21 @@ func defaultConfig(d *gdjDefault) {
 }
 
 // setDevDefaults has not been implemented
-func setDevDefaults() {
-	// TODO: Complete this option
-	fmt.Println("")
-	fmt.Println("Currently, this is not a supported option.")
-	fmt.Println("Instead, please run ./godojo without any command-line options")
-	fmt.Println("to create a default config file in the current working directory")
-	fmt.Println("and edit that file as needed")
-	fmt.Println("")
-	fmt.Println("Alternatively, godojo can be run with \"-default\" to do an install")
-	fmt.Println("using the default config options.")
-	fmt.Println("")
-	fmt.Println("Ask Matt nicely and he may knock this out for you. ;-)")
-	fmt.Println("")
-	os.Exit(1)
-}
+//func setDevDefaults() {
+//	// TODO: Complete this option
+//	fmt.Println("")
+//	fmt.Println("Currently, this is not a supported option.")
+//	fmt.Println("Instead, please run ./godojo without any command-line options")
+//	fmt.Println("to create a default config file in the current working directory")
+//	fmt.Println("and edit that file as needed")
+//	fmt.Println("")
+//	fmt.Println("Alternatively, godojo can be run with \"-default\" to do an install")
+//	fmt.Println("using the default config options.")
+//	fmt.Println("")
+//	fmt.Println("Ask Matt nicely and he may knock this out for you. ;-)")
+//	fmt.Println("")
+//	os.Exit(1)
+//}
 
 // readEnvVars reads the DefectDojo supported environmental variables and
 // overrides any options set in the configuration file. These variables
@@ -450,10 +450,10 @@ func convBool(b string, s string) bool {
 	return res
 }
 
-// checkUserPrivs takes a pointer to gdjDefault struct and verifies that the
+// checkUserPrivs takes a pointer to DDConfig struct and verifies that the
 // user running godojo has sufficient privileges to complete the install and
 // exits with a 1 if privileges are lacking
-func checkUserPrivs(d *gdjDefault) {
+func checkUserPrivs(d *DDConfig) {
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal(err)

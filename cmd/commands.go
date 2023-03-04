@@ -20,15 +20,8 @@ type osCmds struct {
 	hard   []bool   // Flag to know if an error on the matching command is fatal
 }
 
-func addCmd(o *osCmds, cmd string, lerr string, hard bool) {
-	// Append command to existing list
-	o.cmds = append(o.cmds, cmd)
-	o.errmsg = append(o.cmds, lerr)
-	o.hard = append(o.hard, hard)
-}
-
 // TODO: Document this and/or move it to a separate package
-func sendCmd(d *gdjDefault, o *log.Logger, cmd string, lerr string, hard bool) {
+func sendCmd(d *DDConfig, o *log.Logger, cmd string, lerr string, hard bool) {
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
 	d.cmdLogger.Printf("[godojo] # %s\n", d.redactatron(cmd, d.redact))
@@ -50,7 +43,7 @@ func sendCmd(d *gdjDefault, o *log.Logger, cmd string, lerr string, hard bool) {
 }
 
 // TODO: Document this and/or move it to a separate package
-func tryCmd(d *gdjDefault, cmd string, lerr string, hard bool) error {
+func tryCmd(d *DDConfig, cmd string, lerr string, hard bool) error {
 	d.traceMsg("Entering tryCmd")
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
@@ -88,7 +81,7 @@ func tryCmd(d *gdjDefault, cmd string, lerr string, hard bool) error {
 	return nil
 }
 
-func tryCmds(d *gdjDefault, c osCmds) error {
+func tryCmds(d *DDConfig, c osCmds) error {
 	// Cycle through the provided commands, trying them one at at time
 	for i := range c.cmds {
 		err := tryCmd(d,
@@ -107,7 +100,7 @@ func tryCmds(d *gdjDefault, c osCmds) error {
 }
 
 // TODO: Document this and/or move it to a separate package
-func inspectCmd(d *gdjDefault, cmd string, lerr string, hard bool) (string, error) {
+func inspectCmd(d *DDConfig, cmd string, lerr string, hard bool) (string, error) {
 	d.traceMsg("Inside inspectCmd")
 	// Setup command
 	runCmd := exec.Command("bash", "-c", cmd)
@@ -151,7 +144,7 @@ func inspectCmd(d *gdjDefault, cmd string, lerr string, hard bool) (string, erro
 	return tmpBuf.String(), nil
 }
 
-func inspectCmds(d *gdjDefault, c osCmds) ([]string, error) {
+func inspectCmds(d *DDConfig, c osCmds) ([]string, error) {
 	d.traceMsg("Inside inspectCmds")
 	ret := make([]string, 1)
 	// Cycle through the provided commands, trying them one at at time

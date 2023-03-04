@@ -9,7 +9,7 @@ import (
 // readArgs() takes no arguements and returns filled launchArgs struct unless
 // there are errors in the arguments or the argument provided calls for an
 // early exist such as --version or --help
-func readArgs(d *gdjDefault) {
+func readArgs(d *DDConfig) {
 	d.traceMsg("Called readArgs")
 	// Read in the supported command-line options
 	var version, help, v, h bool
@@ -50,7 +50,6 @@ func readArgs(d *gdjDefault) {
 	}
 
 	d.traceMsg("Reached the end of readArgs")
-	return
 }
 
 // printHelp takes no arguements and prints godojo's help content to stdout

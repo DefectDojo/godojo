@@ -3,7 +3,6 @@ package cmd
 import (
 	"embed"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/viper"
@@ -14,10 +13,11 @@ import (
 // setup-superuser.expect - expect script to set the default admin password
 // factory_2.0.3 - python file to work around a bug in Python 3.8 and DefectDojo 1.15.1
 //                 see: https://github.com/DefectDojo/godojo/blob/master/ubuntu.go#L436
+// Next line is an example of a patch for a pre-2.0.0 version of DefectDojo
+//var factory2 = "embd/factory_2.0.3"
 // gdj.tar.gz - experiment on embedding commands into godojo, not currently used
 var embdConfig = "embd/dojoConfig.yml"
 var suExpect = "embd/setup-superuser.expect"
-var factory2 = "embd/factory_2.0.3"
 
 //go:embed embd/*
 var embd embed.FS
@@ -44,7 +44,7 @@ func writeDefaultConfig(c string, printNote bool) {
 	}
 
 	// Write out the embedded default dojoConfig.yml
-	err = ioutil.WriteFile(path+"/"+c, f, 0644)
+	err = os.WriteFile(path+"/"+c, f, 0644)
 	if err != nil {
 		// Cannot write config file
 		fmt.Printf("Unable to write configuration file in %s, exiting...\n", path)
@@ -66,7 +66,7 @@ func writeDefaultConfig(c string, printNote bool) {
 // the same directory as the godojo binary it returns nohing but will exit
 // early with a exit code of 1 if there are errors reading the file or
 // unmarshialling into a struct
-func readConfigFile(d *gdjDefault) {
+func readConfigFile(d *DDConfig) {
 	// Setup viper config
 	viper.AddConfigPath(".")
 	viper.SetConfigName("dojoConfig")
@@ -93,7 +93,7 @@ func readConfigFile(d *gdjDefault) {
 
 // writeInstallConfig writes the final configuration used for the install taking
 // into account the dojoConfig.yml, any command-line arguments and env variables
-func writeFinalConfig(d *gdjDefault) {
+func writeFinalConfig(d *DDConfig) {
 	d.traceMsg("Writing out the runtime install configuration file")
 	err := viper.WriteConfigAs("runtime-install-config.yml")
 	if err != nil {
@@ -275,9 +275,10 @@ type optionalConfig struct {
 	ReleaseURL string `yaml:"ReleaseURL"`
 	CloneURL   string `yaml:"CloneURL"`
 	YarnGPG    string `yaml:"YarnGPG"`
+	YarnRepo   string `yaml:"YarnRepo"`
 	NodeURL    string `yaml:"NodeURL"`
 	Embd       bool   `yaml:"Embd"`
 	Key        string `yaml:"Key"`
-	Tmpdir     string `yaml:Tmpdir`
-	UsrInst    bool   `yaml:UsrInst`
+	Tmpdir     string `yaml:"Tmpdir"`
+	UsrInst    bool   `yaml:"UsrInst"`
 }

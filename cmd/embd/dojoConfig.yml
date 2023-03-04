@@ -159,7 +159,7 @@ Options:
   CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" #
   YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" #
   YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" #
-  NodeURL: "https://deb.nodesource.com/setup_12.x" #
+  NodeURL: "https://deb.nodesource.com/setup_18.x" #
   Embd: false #
   Key: "" #
   Tmpdir: "/opt/.dojo-temp/" #
