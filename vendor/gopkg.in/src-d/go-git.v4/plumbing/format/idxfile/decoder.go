@@ -110,6 +110,10 @@ func readObjectNames(idx *MemoryIndex, r io.Reader) error {
 			continue
 		}
 
+		if buckets < 0 {
+			return ErrMalformedIdxFile
+		}
+
 		idx.FanoutMapping[k] = len(idx.Names)
 
 		nameLen := int(buckets * objectIDLength)

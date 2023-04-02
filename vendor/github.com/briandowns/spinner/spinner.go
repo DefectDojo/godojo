@@ -1,5 +1,3 @@
-// Copyright (c) 2021 Brian J. Downs
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,21 +14,18 @@
 package spinner
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
 
 	"github.com/fatih/color"
-	"github.com/mattn/go-isatty"
-	"golang.org/x/term"
 )
 
 // errInvalidColor is returned when attempting to set an invalid color
@@ -101,10 +96,6 @@ var validColors = map[string]bool{
 	"bgHiWhite":   true,
 }
 
-// returns true if the OS is windows and the WT_SESSION env variable is set.
-var isWindows = runtime.GOOS == "windows"
-var isWindowsTerminalOnWindows = len(os.Getenv("WT_SESSION")) > 0 && isWindows
-
 // returns a valid color's foreground text color attribute
 var colorAttributeMap = map[string]color.Attribute{
 	// default colors for backwards compatibility
@@ -170,57 +161,54 @@ var colorAttributeMap = map[string]color.Attribute{
 	"bgHiWhite":   color.BgHiWhite,
 }
 
-// validColor will make sure the given color is actually allowed.
+// validColor will make sure the given color is actually allowed
 func validColor(c string) bool {
-	return validColors[c]
+	valid := false
+	if validColors[c] {
+		valid = true
+	}
+	return valid
 }
 
-// Spinner struct to hold the provided options.
+// Spinner struct to hold the provided options
 type Spinner struct {
-	mu              *sync.RWMutex
-	Delay           time.Duration                 // Delay is the speed of the indicator
-	chars           []string                      // chars holds the chosen character set
-	Prefix          string                        // Prefix is the text preppended to the indicator
-	Suffix          string                        // Suffix is the text appended to the indicator
-	FinalMSG        string                        // string displayed after Stop() is called
-	lastOutputPlain string                        // last character(set) written
-	LastOutput      string                        // last character(set) written with colors
-	color           func(a ...interface{}) string // default color is white
-	Writer          io.Writer                     // to make testing better, exported so users have access. Use `WithWriter` to update after initialization.
-	active          bool                          // active holds the state of the spinner
-	enabled         bool                          // indicates whether the spinner is enabled or not
-	stopChan        chan struct{}                 // stopChan is a channel used to stop the indicator
-	HideCursor      bool                          // hideCursor determines if the cursor is visible
-	PreUpdate       func(s *Spinner)              // will be triggered before every spinner update
-	PostUpdate      func(s *Spinner)              // will be triggered after every spinner update
+	Delay      time.Duration                 // Delay is the speed of the indicator
+	chars      []string                      // chars holds the chosen character set
+	Prefix     string                        // Prefix is the text preppended to the indicator
+	Suffix     string                        // Suffix is the text appended to the indicator
+	FinalMSG   string                        // string displayed after Stop() is called
+	lastOutput string                        // last character(set) written
+	color      func(a ...interface{}) string // default color is white
+	lock       *sync.RWMutex                 //
+	Writer     io.Writer                     // to make testing better, exported so users have access
+	active     bool                          // active holds the state of the spinner
+	stopChan   chan struct{}                 // stopChan is a channel used to stop the indicator
+	HideCursor bool                          // hideCursor determines if the cursor is visible
 }
 
-// New provides a pointer to an instance of Spinner with the supplied options.
+// New provides a pointer to an instance of Spinner with the supplied options
 func New(cs []string, d time.Duration, options ...Option) *Spinner {
 	s := &Spinner{
-		Delay:      d,
-		chars:      cs,
-		color:      color.New(color.FgWhite).SprintFunc(),
-		mu:         &sync.RWMutex{},
-		Writer:     color.Output,
-		stopChan:   make(chan struct{}, 1),
-		active:     false,
-		enabled:    true,
-		HideCursor: true,
+		Delay:    d,
+		chars:    cs,
+		color:    color.New(color.FgWhite).SprintFunc(),
+		lock:     &sync.RWMutex{},
+		Writer:   color.Output,
+		active:   false,
+		stopChan: make(chan struct{}, 1),
 	}
 
 	for _, option := range options {
 		option(s)
 	}
-
 	return s
 }
 
 // Option is a function that takes a spinner and applies
-// a given configuration.
+// a given configuration
 type Option func(*Spinner)
 
-// Options contains fields to configure the spinner.
+// Options contains fields to configure the spinner
 type Options struct {
 	Color      string
 	Suffix     string
@@ -228,7 +216,7 @@ type Options struct {
 	HideCursor bool
 }
 
-// WithColor adds the given color to the spinner.
+// WithColor adds the given color to the spinner
 func WithColor(color string) Option {
 	return func(s *Spinner) {
 		s.Color(color)
@@ -236,7 +224,7 @@ func WithColor(color string) Option {
 }
 
 // WithSuffix adds the given string to the spinner
-// as the suffix.
+// as the suffix
 func WithSuffix(suffix string) Option {
 	return func(s *Spinner) {
 		s.Suffix = suffix
@@ -244,7 +232,7 @@ func WithSuffix(suffix string) Option {
 }
 
 // WithFinalMSG adds the given string ot the spinner
-// as the final message to be written.
+// as the final message to be written
 func WithFinalMSG(finalMsg string) Option {
 	return func(s *Spinner) {
 		s.FinalMSG = finalMsg
@@ -252,65 +240,31 @@ func WithFinalMSG(finalMsg string) Option {
 }
 
 // WithHiddenCursor hides the cursor
-// if hideCursor = true given.
+// if hideCursor = true given
 func WithHiddenCursor(hideCursor bool) Option {
 	return func(s *Spinner) {
 		s.HideCursor = hideCursor
 	}
 }
 
-// WithWriter adds the given writer to the spinner. This
-// function should be favored over directly assigning to
-// the struct value.
-func WithWriter(w io.Writer) Option {
-	return func(s *Spinner) {
-		s.mu.Lock()
-		s.Writer = w
-		s.mu.Unlock()
-	}
-}
-
-// Active will return whether or not the spinner is currently active.
+// Active will return whether or not the spinner is currently active
 func (s *Spinner) Active() bool {
 	return s.active
 }
 
-// Enabled returns whether or not the spinner is enabled.
-func (s *Spinner) Enabled() bool {
-	return s.enabled
-}
-
-// Enable enables and restarts the spinner
-func (s *Spinner) Enable() {
-	s.enabled = true
-	s.Restart()
-}
-
-// Disable stops and disables the spinner
-func (s *Spinner) Disable() {
-	s.enabled = false
-	s.Stop()
-}
-
-// Start will start the indicator.
+// Start will start the indicator
 func (s *Spinner) Start() {
-	s.mu.Lock()
-	if s.active || !s.enabled || !isRunningInTerminal() {
-		s.mu.Unlock()
+	s.lock.Lock()
+	if s.active {
+		s.lock.Unlock()
 		return
 	}
-	if s.HideCursor && !isWindowsTerminalOnWindows {
+	if s.HideCursor && runtime.GOOS != "windows" {
 		// hides the cursor
-		fmt.Fprint(s.Writer, "\033[?25l")
+		fmt.Print("\033[?25l")
 	}
-	// Disable colors for simple Windows CMD or Powershell
-	// as they can not recognize them
-	if isWindows && !isWindowsTerminalOnWindows {
-		color.NoColor = true
-	}
-
 	s.active = true
-	s.mu.Unlock()
+	s.lock.Unlock()
 
 	go func() {
 		for {
@@ -319,40 +273,24 @@ func (s *Spinner) Start() {
 				case <-s.stopChan:
 					return
 				default:
-					s.mu.Lock()
-					if !s.active {
-						s.mu.Unlock()
-						return
-					}
-					if !isWindowsTerminalOnWindows {
-						s.erase()
-					}
-
-					if s.PreUpdate != nil {
-						s.PreUpdate(s)
-					}
-
+					s.lock.Lock()
+					s.erase()
 					var outColor string
-					if isWindows {
+					if runtime.GOOS == "windows" {
 						if s.Writer == os.Stderr {
-							outColor = fmt.Sprintf("\r%s%s%s", s.Prefix, s.chars[i], s.Suffix)
+							outColor = fmt.Sprintf("\r%s%s%s ", s.Prefix, s.chars[i], s.Suffix)
 						} else {
-							outColor = fmt.Sprintf("\r%s%s%s", s.Prefix, s.color(s.chars[i]), s.Suffix)
+							outColor = fmt.Sprintf("\r%s%s%s ", s.Prefix, s.color(s.chars[i]), s.Suffix)
 						}
 					} else {
-						outColor = fmt.Sprintf("\r%s%s%s", s.Prefix, s.color(s.chars[i]), s.Suffix)
+						outColor = fmt.Sprintf("%s%s%s ", s.Prefix, s.color(s.chars[i]), s.Suffix)
 					}
-					outPlain := fmt.Sprintf("\r%s%s%s", s.Prefix, s.chars[i], s.Suffix)
+					outPlain := fmt.Sprintf("%s%s%s ", s.Prefix, s.chars[i], s.Suffix)
 					fmt.Fprint(s.Writer, outColor)
-					s.lastOutputPlain = outPlain
-					s.LastOutput = outColor
+					s.lastOutput = outPlain
 					delay := s.Delay
+					s.lock.Unlock()
 
-					if s.PostUpdate != nil {
-						s.PostUpdate(s)
-					}
-
-					s.mu.Unlock()
 					time.Sleep(delay)
 				}
 			}
@@ -360,46 +298,42 @@ func (s *Spinner) Start() {
 	}()
 }
 
-// Stop stops the indicator.
+// Stop stops the indicator
 func (s *Spinner) Stop() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.active {
 		s.active = false
-		if s.HideCursor && !isWindowsTerminalOnWindows {
+		if s.HideCursor && runtime.GOOS != "windows" {
 			// makes the cursor visible
-			fmt.Fprint(s.Writer, "\033[?25h")
+			fmt.Print("\033[?25h")
 		}
 		s.erase()
 		if s.FinalMSG != "" {
-			if isWindowsTerminalOnWindows {
-				fmt.Fprint(s.Writer, "\r", s.FinalMSG)
-			} else {
-				fmt.Fprint(s.Writer, s.FinalMSG)
-			}
+			fmt.Fprintf(s.Writer, s.FinalMSG)
 		}
 		s.stopChan <- struct{}{}
 	}
 }
 
-// Restart will stop and start the indicator.
+// Restart will stop and start the indicator
 func (s *Spinner) Restart() {
 	s.Stop()
 	s.Start()
 }
 
-// Reverse will reverse the order of the slice assigned to the indicator.
+// Reverse will reverse the order of the slice assigned to the indicator
 func (s *Spinner) Reverse() {
-	s.mu.Lock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	for i, j := 0, len(s.chars)-1; i < j; i, j = i+1, j-1 {
 		s.chars[i], s.chars[j] = s.chars[j], s.chars[i]
 	}
-	s.mu.Unlock()
 }
 
-// Color will set the struct field for the given color to be used. The spinner
-// will need to be explicitly restarted.
+// Color will set the struct field for the given color to be used
 func (s *Spinner) Color(colors ...string) error {
+
 	colorAttributes := make([]color.Attribute, len(colors))
 
 	// Verify colours are valid and place the appropriate attribute in the array
@@ -407,132 +341,76 @@ func (s *Spinner) Color(colors ...string) error {
 		if !validColor(c) {
 			return errInvalidColor
 		}
+
 		colorAttributes[index] = colorAttributeMap[c]
 	}
 
-	s.mu.Lock()
+	s.lock.Lock()
 	s.color = color.New(colorAttributes...).SprintFunc()
-	s.mu.Unlock()
+	s.lock.Unlock()
+	s.Restart()
 	return nil
 }
 
-// UpdateSpeed will set the indicator delay to the given value.
+// UpdateSpeed will set the indicator delay to the given value
 func (s *Spinner) UpdateSpeed(d time.Duration) {
-	s.mu.Lock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.Delay = d
-	s.mu.Unlock()
 }
 
-// UpdateCharSet will change the current character set to the given one.
+// UpdateCharSet will change the current character set to the given one
 func (s *Spinner) UpdateCharSet(cs []string) {
-	s.mu.Lock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.chars = cs
-	s.mu.Unlock()
 }
 
-// erase deletes written characters on the current line.
+// erase deletes written characters
+//
 // Caller must already hold s.lock.
 func (s *Spinner) erase() {
-	n := utf8.RuneCountInString(s.lastOutputPlain)
-	if runtime.GOOS == "windows" && !isWindowsTerminalOnWindows {
-		clearString := "\r" + strings.Repeat(" ", n) + "\r"
-		fmt.Fprint(s.Writer, clearString)
-		s.lastOutputPlain = ""
+	n := utf8.RuneCountInString(s.lastOutput)
+	if runtime.GOOS == "windows" {
+		clearString := ""
+		for i := 0; i < n; i++ {
+			clearString += " "
+		}
+		clearString += "\r"
+		fmt.Fprintf(s.Writer, clearString)
+		s.lastOutput = ""
 		return
 	}
-
-	numberOfLinesToErase := computeNumberOfLinesNeededToPrintString(s.lastOutputPlain)
-
-	// Taken from https://en.wikipedia.org/wiki/ANSI_escape_code:
-	// \r     - Carriage return - Moves the cursor to column zero
-	// \033[K - Erases part of the line. If n is 0 (or missing), clear from
-	// cursor to the end of the line. If n is 1, clear from cursor to beginning
-	// of the line. If n is 2, clear entire line. Cursor position does not
-	// change.
-	// \033[F - Go to the beginning of previous line
-	eraseCodeString := strings.Builder{}
-	// current position is at the end of the last printed line. Start by erasing current line
-	eraseCodeString.WriteString("\r\033[K") // start by erasing current line
-	for i := 1; i < numberOfLinesToErase; i++ {
-		// For each additional lines, go up one line and erase it.
-		eraseCodeString.WriteString("\033[F\033[K")
+	del, _ := hex.DecodeString("7f")
+	for _, c := range []string{
+		"\b",
+		string(del),
+		"\b",
+		"\033[K", // for macOS Terminal
+	} {
+		for i := 0; i < n; i++ {
+			fmt.Fprintf(s.Writer, c)
+		}
 	}
-	fmt.Fprintf(s.Writer, eraseCodeString.String())
-	s.lastOutputPlain = ""
+	s.lastOutput = ""
 }
 
-// Lock allows for manual control to lock the spinner.
+// Lock allows for manual control to lock the spinner
 func (s *Spinner) Lock() {
-	s.mu.Lock()
+	s.lock.Lock()
 }
 
-// Unlock allows for manual control to unlock the spinner.
+// Unlock allows for manual control to unlock the spinner
 func (s *Spinner) Unlock() {
-	s.mu.Unlock()
+	s.lock.Unlock()
 }
 
 // GenerateNumberSequence will generate a slice of integers at the
-// provided length and convert them each to a string.
+// provided length and convert them each to a string
 func GenerateNumberSequence(length int) []string {
 	numSeq := make([]string, length)
 	for i := 0; i < length; i++ {
 		numSeq[i] = strconv.Itoa(i)
 	}
 	return numSeq
-}
-
-// isRunningInTerminal check if stdout file descriptor is terminal
-func isRunningInTerminal() bool {
-	return isatty.IsTerminal(os.Stdout.Fd())
-}
-
-func computeNumberOfLinesNeededToPrintString(linePrinted string) int {
-	terminalWidth := math.MaxInt // assume infinity by default to keep behaviour consistent with what we had before
-	if term.IsTerminal(0) {
-		if width, _, err := term.GetSize(0); err == nil {
-			terminalWidth = width
-		}
-	}
-	return computeNumberOfLinesNeededToPrintStringInternal(linePrinted, terminalWidth)
-}
-
-// isAnsiMarker returns if a rune denotes the start of an ANSI sequence
-func isAnsiMarker(r rune) bool {
-	return r == '\x1b'
-}
-
-// isAnsiTerminator returns if a rune denotes the end of an ANSI sequence
-func isAnsiTerminator(r rune) bool {
-	return (r >= 0x40 && r <= 0x5a) || (r == 0x5e) || (r >= 0x60 && r <= 0x7e)
-}
-
-// computeLineWidth returns the displayed width of a line
-func computeLineWidth(line string) int {
-	width := 0
-	ansi := false
-
-	for _, r := range []rune(line) {
-		// increase width only when outside of ANSI escape sequences
-		if ansi || isAnsiMarker(r) {
-			ansi = !isAnsiTerminator(r)
-		} else {
-			width += utf8.RuneLen(r)
-		}
-	}
-
-	return width
-}
-
-func computeNumberOfLinesNeededToPrintStringInternal(linePrinted string, maxLineWidth int) int {
-	lineCount := 0
-	for _, line := range strings.Split(linePrinted, "\n") {
-		lineCount += 1
-
-		lineWidth := computeLineWidth(line)
-		if lineWidth > maxLineWidth {
-			lineCount += int(float64(lineWidth) / float64(maxLineWidth))
-		}
-	}
-
-	return lineCount
 }

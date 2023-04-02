@@ -20,14 +20,8 @@ func (s *IndexStorage) SetIndex(idx *index.Index) (err error) {
 	}
 
 	defer ioutil.CheckClose(f, &err)
-	bw := bufio.NewWriter(f)
-	defer func() {
-		if e := bw.Flush(); err == nil && e != nil {
-			err = e
-		}
-	}()
 
-	e := index.NewEncoder(bw)
+	e := index.NewEncoder(f)
 	err = e.Encode(idx)
 	return err
 }

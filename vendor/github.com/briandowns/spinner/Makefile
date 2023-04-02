@@ -1,11 +1,9 @@
-GO = go
+GO = GO111MODULE=on GOFLAGS=-mod=vendor go
 
 .PHONY: deps
-deps: go.mod
-
-go.mod:
-	go mod init
-	go mod tidy
+deps:
+	$(GO) mod download
+	$(GO) mod vendor
 
 .PHONY: test
 test:

@@ -139,7 +139,7 @@ func (s *session) ApplyAuthToRequest(req *http.Request) {
 		return
 	}
 
-	s.auth.SetAuth(req)
+	s.auth.setAuth(req)
 }
 
 func (s *session) ModifyEndpointIfRedirect(res *http.Response) {
@@ -175,7 +175,7 @@ func (*session) Close() error {
 // AuthMethod is concrete implementation of common.AuthMethod for HTTP services
 type AuthMethod interface {
 	transport.AuthMethod
-	SetAuth(r *http.Request)
+	setAuth(r *http.Request)
 }
 
 func basicAuthFromEndpoint(ep *transport.Endpoint) *BasicAuth {
@@ -192,7 +192,7 @@ type BasicAuth struct {
 	Username, Password string
 }
 
-func (a *BasicAuth) SetAuth(r *http.Request) {
+func (a *BasicAuth) setAuth(r *http.Request) {
 	if a == nil {
 		return
 	}
@@ -226,7 +226,7 @@ type TokenAuth struct {
 	Token string
 }
 
-func (a *TokenAuth) SetAuth(r *http.Request) {
+func (a *TokenAuth) setAuth(r *http.Request) {
 	if a == nil {
 		return
 	}

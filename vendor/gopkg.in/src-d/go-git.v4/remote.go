@@ -171,17 +171,7 @@ func (r *Remote) PushContext(ctx context.Context, o *PushOptions) (err error) {
 		}
 	}
 
-	if len(hashesToPush) == 0 {
-		allDelete = true
-		for _, command := range req.Commands {
-			if command.Action() != packp.Delete {
-				allDelete = false
-				break
-			}
-		}
-	}
-
-	rs, err := pushHashes(ctx, s, r.s, req, hashesToPush, r.useRefDeltas(ar), allDelete)
+	rs, err := pushHashes(ctx, s, r.s, req, hashesToPush, r.useRefDeltas(ar))
 	if err != nil {
 		return err
 	}
@@ -214,7 +204,7 @@ func (r *Remote) newReferenceUpdateRequest(
 		}
 	}
 
-	if err := r.addReferencesToUpdate(o.RefSpecs, localRefs, remoteRefs, req, o.Prune); err != nil {
+	if err := r.addReferencesToUpdate(o.RefSpecs, localRefs, remoteRefs, req); err != nil {
 		return nil, err
 	}
 
@@ -402,7 +392,6 @@ func (r *Remote) addReferencesToUpdate(
 	localRefs []*plumbing.Reference,
 	remoteRefs storer.ReferenceStorer,
 	req *packp.ReferenceUpdateRequest,
-	prune bool,
 ) error {
 	// This references dictionary will be used to search references by name.
 	refsDict := make(map[string]*plumbing.Reference)
@@ -412,19 +401,13 @@ func (r *Remote) addReferencesToUpdate(
 
 	for _, rs := range refspecs {
 		if rs.IsDelete() {
-			if err := r.deleteReferences(rs, remoteRefs, refsDict, req, false); err != nil {
+			if err := r.deleteReferences(rs, remoteRefs, req); err != nil {
 				return err
 			}
 		} else {
 			err := r.addOrUpdateReferences(rs, localRefs, refsDict, remoteRefs, req)
 			if err != nil {
 				return err
-			}
-
-			if prune {
-				if err := r.deleteReferences(rs, remoteRefs, refsDict, req, true); err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -461,10 +444,7 @@ func (r *Remote) addOrUpdateReferences(
 }
 
 func (r *Remote) deleteReferences(rs config.RefSpec,
-	remoteRefs storer.ReferenceStorer,
-	refsDict map[string]*plumbing.Reference,
-	req *packp.ReferenceUpdateRequest,
-	prune bool) error {
+	remoteRefs storer.ReferenceStorer, req *packp.ReferenceUpdateRequest) error {
 	iter, err := remoteRefs.IterReferences()
 	if err != nil {
 		return err
@@ -475,19 +455,8 @@ func (r *Remote) deleteReferences(rs config.RefSpec,
 			return nil
 		}
 
-		if prune {
-			rs := rs.Reverse()
-			if !rs.Match(ref.Name()) {
-				return nil
-			}
-
-			if _, ok := refsDict[rs.Dst(ref.Name()).String()]; ok {
-				return nil
-			}
-		} else {
-			if rs.Dst("") != ref.Name() {
-				return nil
-			}
+		if rs.Dst("") != ref.Name() {
+			return nil
 		}
 
 		cmd := &packp.Command{
@@ -937,7 +906,7 @@ func (r *Remote) updateLocalReferenceStorage(
 		updated = true
 	}
 
-	if forceNeeded {
+	if err == nil && forceNeeded {
 		err = ErrForceNeeded
 	}
 
@@ -1046,11 +1015,10 @@ func pushHashes(
 	req *packp.ReferenceUpdateRequest,
 	hs []plumbing.Hash,
 	useRefDeltas bool,
-	allDelete bool,
 ) (*packp.ReportStatus, error) {
 
 	rd, wr := io.Pipe()
-
+	req.Packfile = rd
 	config, err := s.Config()
 	if err != nil {
 		return nil, err
@@ -1061,20 +1029,15 @@ func pushHashes(
 	// to the channel.
 	done := make(chan error, 1)
 
-	if !allDelete {
-		req.Packfile = rd
-		go func() {
-			e := packfile.NewEncoder(wr, s, useRefDeltas)
-			if _, err := e.Encode(hs, config.Pack.Window); err != nil {
-				done <- wr.CloseWithError(err)
-				return
-			}
+	go func() {
+		e := packfile.NewEncoder(wr, s, useRefDeltas)
+		if _, err := e.Encode(hs, config.Pack.Window); err != nil {
+			done <- wr.CloseWithError(err)
+			return
+		}
 
-			done <- wr.Close()
-		}()
-	} else {
-		close(done)
-	}
+		done <- wr.Close()
+	}()
 
 	rs, err := sess.ReceivePack(ctx, req)
 	if err != nil {
