@@ -724,6 +724,15 @@ var u2204CreateSettings = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
+		Cmd: "echo '# Add customizations here\n# For more details see:" +
+			" https://documentation.defectdojo.com/getting_started/configuration/' > /opt/dojo/customizations/local_settings.py",
+		Errmsg:     "Unable to change ownership of .env.prod file",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
 		Cmd: "chown {conf.Install.OS.User}.{conf.Install.OS.Group} {conf.Install.Root}" +
 			"/django-DefectDojo/dojo/settings/settings.py",
 		Errmsg:     "Unable to change ownership of settings.py file",
@@ -837,6 +846,22 @@ var u2204SetupDojo = []c.SingleCmd{
 	c.SingleCmd{
 		Cmd:        "cd {conf.Install.Root}/django-DefectDojo && source ../bin/activate && python3 manage.py installwatson",
 		Errmsg:     "Failed while the running installwatson",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_test_types",
+		Errmsg:     "Failed to initialize test_types",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_permissions",
+		Errmsg:     "Failed to initialize permissions",
 		Hard:       true,
 		Timeout:    0,
 		BeforeText: "",

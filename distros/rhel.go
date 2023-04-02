@@ -450,7 +450,7 @@ func getRHELInstallPgClient(bc *c.CmdPkg, t string) error {
 // RHEL 8 install Postgres client Commands
 var rhel8InstPgClient = []c.SingleCmd{
 	c.SingleCmd{
-		Cmd:        "dnf install -y postgresql13 && false",
+		Cmd:        "dnf module enable -y postgresql:13 && dnf install -y postgresql",
 		Errmsg:     "Unable to install PostgreSQL client",
 		Hard:       true,
 		Timeout:    0,
@@ -468,6 +468,14 @@ var rhel8InstPgClient = []c.SingleCmd{
 	c.SingleCmd{
 		Cmd:        "id postgres &>/dev/null; if [ $? -ne 0 ]; then useradd -s /bin/bash -m -g postgres postgres; fi",
 		Errmsg:     "Unable to add postgres user",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "mkdir -p /var/lib/pgsql",
+		Errmsg:     "Unable to create postgres user directory",
 		Hard:       true,
 		Timeout:    0,
 		BeforeText: "",
@@ -732,6 +740,15 @@ var rhel8CreateSettings = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
+		Cmd: "echo '# Add customizations here\n# For more details see:" +
+			" https://documentation.defectdojo.com/getting_started/configuration/' > /opt/dojo/customizations/local_settings.py",
+		Errmsg:     "Unable to change ownership of .env.prod file",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
 		Cmd: "chown {conf.Install.OS.User}.{conf.Install.OS.Group} {conf.Install.Root}" +
 			"/django-DefectDojo/dojo/settings/.env.prod",
 		Errmsg:     "Unable to change ownership of .env.prod file",
@@ -845,6 +862,22 @@ var rhel8SetupDojo = []c.SingleCmd{
 	c.SingleCmd{
 		Cmd:        "cd {conf.Install.Root}/django-DefectDojo && source ../bin/activate && python3 manage.py installwatson",
 		Errmsg:     "Failed while the running installwatson",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_test_types",
+		Errmsg:     "Failed to initialize test_types",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_permissions",
+		Errmsg:     "Failed to initialize permissions",
 		Hard:       true,
 		Timeout:    0,
 		BeforeText: "",

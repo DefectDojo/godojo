@@ -607,7 +607,7 @@ func prepPostgreSQL(d *DDConfig, t *targetOS) error {
 	d.traceMsg("Dropping existing DefectDojo PostgreSQL DB user, if any")
 	dropUsr := sqlStr{
 		os:     t.id,
-		sql:    "DROP USER IF EXISTS " + d.conf.Install.DB.User + ";",
+		sql:    "DROP owned by " + d.conf.Install.DB.User + "; DROP USER IF EXISTS " + d.conf.Install.DB.User + ";",
 		errMsg: "Unable to delete existing database user for DefectDojo or one didn't exist",
 		creds:  creds,
 		kind:   "inspect",
@@ -714,6 +714,12 @@ func updatePgHba(d *DDConfig, t *targetOS) bool {
 		return true
 	}
 
+	// For remote DBs, it's not possible to edit pg_hba.conf
+	if !d.conf.Install.DB.Local {
+		// return early
+		return true
+	}
+
 	d.traceMsg("RHEL or variant - pg_hba.conf needs to be updated.")
 	f, err := os.OpenFile("/var/lib/pgsql/data/pg_hba.conf", os.O_RDWR, 0600)
 	if err != nil {
@@ -750,7 +756,7 @@ func updatePgHba(d *DDConfig, t *targetOS) bool {
 	}
 
 	// Truncate the file to make sure its empty before writing
-	f.Truncate(0)
+	_ = f.Truncate(0)
 
 	// Write new config file by starting at the begining of the file
 	_, err = f.WriteAt([]byte(content), 0)

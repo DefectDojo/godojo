@@ -48,7 +48,7 @@ Install:
   OS:
     User: "dojosrv" # DD_OS_User - OS user to own the DefectDojo instll and files
     Pass: "wahlieboojoKa8aitheibai3" # DD_OS_Pass - Password for the OS user for DefectDojo Note: set to 24 random characters
-    Group: "dojo-srv" # DD_OS_Group - OS Group to own the DefectDojo install and files
+    Group: "dojosrv" # DD_OS_Group - OS Group to own the DefectDojo install and files
     UID: 1337 # DD_OS_UID - User ID for the DefectDojo OS user
     GID: 1337 # DD_OS_GID - Group ID for the DefectDojo OS group
   Settings:
@@ -65,6 +65,7 @@ Install:
 
 Settings:
   AllowedHosts: "*" # DD_ALLOWED_HOSTS - List of hostnames/IPs allowed to connect to DefectDojo
+  AppHostname: "https://replace-me.tld" # DD_APP_HOSTNAME - holds the hostname of the DefectDojo web app
   CeleryBeatScheduleFilename: "" # DD_CELERY_BEAT_SCHEDULE_FILENAME - DD_Files + doj.celery.beat.db
   CeleryBrokerHost: "" # DD_CELERY_BROKER_HOST - Hostname for the Celery broker
   CeleryBrokerPassword: "" # DD_CELERY_BROKER_PASSWORD - Password for the Celery broker

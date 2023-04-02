@@ -13,10 +13,10 @@ import (
 // Define the template
 const envProd = `
 # Django Debug, don't enable on production! - default is off
-DD_DEBUG={{.DD_DEBUG}}
+#DD_DEBUG={{.DD_DEBUG}}
 
 # Enables Django Admin - default is on
-DD_DJANGO_ADMIN_ENABLED={{.DD_DJANGO_ADMIN_ENABLED}}
+#DD_DJANGO_ADMIN_ENABLED={{.DD_DJANGO_ADMIN_ENABLED}}
 
 # A secret key for a particular Django installation.
 DD_SECRET_KEY={{.DD_SECRET_KEY}}
@@ -30,59 +30,14 @@ DD_DATABASE_URL={{.DD_DATABASE_URL}}
 # Hosts/domain names that are valid for this site;
 DD_ALLOWED_HOSTS={{.DD_ALLOWED_HOSTS}}
 
+# CSRF Trusted Origins
+DD_CSRF_TRUSTED_ORIGINS="{{.DD_APP_HOSTNAME}}"
+
 # WhiteNoise allows your web app to serve its own static files,
 # making it a self-contained unit that can be deployed anywhere without relying on nginx,
 # if using nginx then disable Whitenoise
 DD_WHITENOISE={{.DD_WHITENOISE}}
 
-# -------------------------------------------------------
-# Additional Settings / Override defaults in settings.py
-# -------------------------------------------------------
-
-# Timezone - default is America/New_York
-DD_TIME_ZONE={{.DD_TIME_ZONE}}
-
-# Track migrations through source control rather than making migrations locally - default is on
-DD_TRACK_MIGRATIONS={{.DD_TRACK_MIGRATIONS}}
-
-# Whether to use HTTPOnly flag on the session cookie - default is on
-DD_SESSION_COOKIE_HTTPONLY={{.DD_SESSION_COOKIE_HTTPONLY}}
-
-# Whether to use HttpOnly flag on the CSRF cookie - default is on
-DD_CSRF_COOKIE_HTTPONLY={{.DD_CSRF_COOKIE_HTTPONLY}}
-
-# If True, the SecurityMiddleware redirects all non-HTTPS requests to HTTPS - default is off
-DD_SECURE_SSL_REDIRECT={{.DD_SECURE_SSL_REDIRECT}}
-
-# Whether to use a secure cookie for the CSRF cookie - default is off
-DD_CSRF_COOKIE_SECURE={{.DD_CSRF_COOKIE_SECURE}}
-
-# If on, the SecurityMiddleware sets the X-XSS-Protection: 1; - default is on
-DD_SECURE_BROWSER_XSS_FILTER={{.DD_SECURE_BROWSER_XSS_FILTER}}
-
-# Change the default language set - default is en-us
-DD_LANG={{.DD_LANG}}
-
-# Path to PDF library - default is /usr/local/bin/wkhtmltopdf
-DD_WKHTMLTOPDF={{.DD_WKHTMLTOPDF}}
-
-# Security team name, used for outgoing emails - default is Security
-DD_TEAM_NAME={{.DD_TEAM_NAME}}
-
-# Admins for log emails - default is dojo-srv@localhost
-DD_ADMINS={{.DD_ADMINS}}
-
-# Port scan contact email - default is dojo-srv@localhost
-DD_PORT_SCAN_CONTACT_EMAIL={{.DD_PORT_SCAN_CONTACT_EMAIL}}
-
-# Port scan from email - default is dojo-srv@localhost
-DD_PORT_SCAN_RESULT_EMAIL_FROM={{.DD_PORT_SCAN_RESULT_EMAIL_FROM}}
-
-# Port scan email list - default is dojo-srv@localhost
-DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST={{.DD_PORT_SCAN_EXTERNAL_UNIT_EMAIL_LIST}}
-
-# Port scan source - default is 127.0.0.1
-DD_PORT_SCAN_SOURCE_IP={{.DD_PORT_SCAN_SOURCE_IP}}
 `
 
 type envVals struct {
@@ -92,6 +47,7 @@ type envVals struct {
 	DD_CREDENTIAL_AES_256_KEY             string
 	DD_DATABASE_URL                       string
 	DD_ALLOWED_HOSTS                      string
+	DD_APP_HOSTNAME                       string
 	DD_WHITENOISE                         bool
 	DD_TIME_ZONE                          string
 	DD_TRACK_MIGRATIONS                   bool
@@ -143,6 +99,7 @@ func genAndWriteEnv(d *DDConfig, dbURL string) {
 		DD_CREDENTIAL_AES_256_KEY:             credentialKey,
 		DD_DATABASE_URL:                       dbURL,
 		DD_ALLOWED_HOSTS:                      d.conf.Settings.AllowedHosts,
+		DD_APP_HOSTNAME:                       d.conf.Settings.AppHostname,
 		DD_WHITENOISE:                         d.conf.Settings.Whitenoise,
 		DD_TIME_ZONE:                          d.conf.Settings.TimeZone,
 		DD_TRACK_MIGRATIONS:                   d.conf.Settings.TrackMigrations,

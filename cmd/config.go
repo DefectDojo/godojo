@@ -179,6 +179,7 @@ type settingsConfig struct {
 	Admins                                string `yaml:"Admins"`
 	AdminUser                             string `yaml:"AdminUser"`
 	AllowedHosts                          string `yaml:"AllowedHosts"`
+	AppHostname                           string `yaml:"AppHostname"`
 	CeleryBeatScheduleFilename            string `yaml:"CeleryBeatScheduleFilename"`
 	CeleryBrokerHost                      string `yaml:"CeleryBrokerHost"`
 	CeleryBrokerPassword                  string `yaml:"CeleryBrokerPassword"`
