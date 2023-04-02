@@ -14,16 +14,16 @@
 # SecretKey
 
 Install:
-  Version: "2.4.1" # DD_Version - Release version of DefectDojo from Github Releases
-  SourceInstall: false # DD_SourceInstall - Boolean if a source install is desired (vs a release)
+  Version: "2.18.4" # DD_Version - Release version of DefectDojo from Github Releases
+  SourceInstall: true # DD_SourceInstall - Boolean if a source install is desired (vs a release)
   # If ^ is true, a souce code install will occur overriding the release version provided
-  SourceBranch: "dev" # DD_SourceBranch - The branch's HEAD to be checked out if SourceInstall is true
+  SourceBranch: "master" # DD_SourceBranch - The branch's HEAD to be checked out if SourceInstall is true
   SourceCommit: # DD_SourceCommit - If there is a value here, the specific commit will be used over the branch ^
   Quiet: false # DD_Quiet - Suppress normal output - only errors will be shown
   Trace: true # DD_Trace - Boolean to enable the most verbose logging during install
   Redact: true # DD_Redact - Boolean to redact sensitive info from the logs
   DevInstall: false # DD_Dev_Install - Boolean for development installs, uses fixed values
-  Prompt: false # DD_Prompt - Boolean to prompt for configuration values - DEPRECATED
+  Prompt: false # DD_Prompt - Boolean to prompt for configuration values - NOT IMPLEMENTED YET
   Mac: false # DD_Mac - Boolean to set the install target as a Mac - NOT IMPLEMENTED YET - use docker-compose instead
   Root: "/opt/dojo" # DD_Root - Root directory for the DefectDojo app Note: No traiing /
   Source: "django-DefectDojo" # DD_Source - Directory in DD_Root for DefectDojo source code Note: No /'s just the name
@@ -48,7 +48,7 @@ Install:
   OS:
     User: "dojosrv" # DD_OS_User - OS user to own the DefectDojo instll and files
     Pass: "wahlieboojoKa8aitheibai3" # DD_OS_Pass - Password for the OS user for DefectDojo Note: set to 24 random characters
-    Group: "dojo-srv" # DD_OS_Group - OS Group to own the DefectDojo install and files
+    Group: "dojosrv" # DD_OS_Group - OS Group to own the DefectDojo install and files
     UID: 1337 # DD_OS_UID - User ID for the DefectDojo OS user
     GID: 1337 # DD_OS_GID - Group ID for the DefectDojo OS group
   Settings:
@@ -65,6 +65,7 @@ Install:
 
 Settings:
   AllowedHosts: "*" # DD_ALLOWED_HOSTS - List of hostnames/IPs allowed to connect to DefectDojo
+  AppHostname: "https://replace-me.tld" # DD_APP_HOSTNAME - holds the hostname of the DefectDojo web app
   CeleryBeatScheduleFilename: "" # DD_CELERY_BEAT_SCHEDULE_FILENAME - DD_Files + doj.celery.beat.db
   CeleryBrokerHost: "" # DD_CELERY_BROKER_HOST - Hostname for the Celery broker
   CeleryBrokerPassword: "" # DD_CELERY_BROKER_PASSWORD - Password for the Celery broker
@@ -159,7 +160,7 @@ Options:
   CloneURL: "https://github.com/DefectDojo/django-DefectDojo.git" #
   YarnGPG: "https://dl.yarnpkg.com/debian/pubkey.gpg" #
   YarnRepo: "deb https://dl.yarnpkg.com/debian/ stable main" #
-  NodeURL: "https://deb.nodesource.com/setup_12.x" #
+  NodeURL: "https://deb.nodesource.com/setup_18.x" #
   Embd: false #
   Key: "" #
   Tmpdir: "/opt/.dojo-temp/" #

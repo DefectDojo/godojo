@@ -1,10 +1,12 @@
-module github.com/mtesauro/godojo
+module github.com/defectdojo/godojo
 
 go 1.19
 
 require (
 	github.com/briandowns/spinner v1.6.1
+	github.com/mtesauro/commandeer v1.1.4
 	github.com/spf13/viper v1.4.0
+	golang.org/x/text v0.3.2
 	gopkg.in/src-d/go-git.v4 v4.12.0
 )
 
@@ -32,7 +34,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
-	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
