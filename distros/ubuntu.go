@@ -450,7 +450,7 @@ func getUbuntuInstallPgClient(bc *c.CmdPkg, t string) error {
 // Ubuntu 22.04 install Postgres client Commands
 var u2204InstPgClient = []c.SingleCmd{
 	c.SingleCmd{
-		Cmd:        "DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-12",
+		Cmd:        "DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-14",
 		Errmsg:     "Unable to install PostgreSQL client",
 		Hard:       true,
 		Timeout:    0,
