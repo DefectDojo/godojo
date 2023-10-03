@@ -350,11 +350,11 @@ func hane(d *DDConfig, s []string) error {
 			fmt.Sprintf("Unable to run command: %v", t[j]),
 			true)
 	}
-	d.traceMsg("Final change of ownership for /opt/dojo")
+	d.traceMsg("Final change of ownership for " + d.conf.Install.Root)
 	sendCmd(d,
 		tempLog,
-		"chown -R "+d.conf.Install.OS.User+":"+d.conf.Install.OS.Group+" /opt/dojo",
-		"Unable to set file ownership for /opt/dojo",
+		"chown -R "+d.conf.Install.OS.User+":"+d.conf.Install.OS.Group+" "+d.conf.Install.Root,
+		"Unable to set file ownership for "+d.conf.Install.Root,
 		false)
 
 	return nil
