@@ -632,7 +632,7 @@ var rhel8PrepDjango = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "python3.9 -m virtualenv --python=/usr/bin/python3.9 /opt/dojo",
+		Cmd:        "python3.9 -m virtualenv --python=/usr/bin/python3.9 {conf.Install.Root}",
 		Errmsg:     "Unable to create virtualenv for DefectDojo",
 		Hard:       true,
 		Timeout:    0,
@@ -640,7 +640,7 @@ var rhel8PrepDjango = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "/opt/dojo/bin/python3 -m pip install --upgrade pip",
+		Cmd:        "{conf.Install.Root}/bin/python3 -m pip install --upgrade pip",
 		Errmsg:     "Upgrade of Python pip failed",
 		Hard:       true,
 		Timeout:    0,
@@ -648,7 +648,7 @@ var rhel8PrepDjango = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "/opt/dojo/bin/pip3 install -r /opt/dojo/django-DefectDojo/requirements.txt",
+		Cmd:        "{conf.Install.Root}/bin/pip3 install -r {conf.Install.Root}/django-DefectDojo/requirements.txt",
 		Errmsg:     "Unable to install Python3 modules for DefectDojo",
 		Hard:       true,
 		Timeout:    0,
@@ -741,7 +741,7 @@ var rhel8CreateSettings = []c.SingleCmd{
 	},
 	c.SingleCmd{
 		Cmd: "echo '# Add customizations here\n# For more details see:" +
-			" https://documentation.defectdojo.com/getting_started/configuration/' > /opt/dojo/customizations/local_settings.py",
+			" https://documentation.defectdojo.com/getting_started/configuration/' > {conf.Install.Root}/customizations/local_settings.py",
 		Errmsg:     "Unable to change ownership of .env.prod file",
 		Hard:       true,
 		Timeout:    0,
@@ -868,7 +868,7 @@ var rhel8SetupDojo = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_test_types",
+		Cmd:        "cd {conf.Install.Root}/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_test_types",
 		Errmsg:     "Failed to initialize test_types",
 		Hard:       true,
 		Timeout:    0,
@@ -876,7 +876,7 @@ var rhel8SetupDojo = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "cd /opt/dojo/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_permissions",
+		Cmd:        "cd {conf.Install.Root}/django-DefectDojo && source ../bin/activate && python3 manage.py initialize_permissions",
 		Errmsg:     "Failed to initialize permissions",
 		Hard:       true,
 		Timeout:    0,
