@@ -6,7 +6,7 @@ require (
 	github.com/briandowns/spinner v1.6.1
 	github.com/mtesauro/commandeer v1.1.4
 	github.com/spf13/viper v1.4.0
-	golang.org/x/text v0.7.0
+	golang.org/x/text v0.13.0
 	gopkg.in/src-d/go-git.v4 v4.12.0
 )
 
