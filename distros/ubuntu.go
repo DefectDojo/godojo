@@ -10,6 +10,13 @@ import (
 // Slice of Target structs supported Ubuntu Install Targets
 var ubuntuReleases = []c.Target{
 	{
+		ID:      "Ubuntu:23.10",
+		Distro:  "Ubuntu",
+		Release: "23.10",
+		OS:      "Linux",
+		Shell:   "bash",
+	},
+	{
 		ID:      "Ubuntu:22.04",
 		Distro:  "Ubuntu",
 		Release: "22.04",
@@ -138,6 +145,8 @@ func setUbuntuBootstrap() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310Bootstrap
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204Bootstrap
 		case ubuntuReleases[k].Release == "21.04":
@@ -196,6 +205,9 @@ var u2204Bootstrap = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104Bootstrap = append([]c.SingleCmd{}, u2204Bootstrap...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310Bootstrap = append([]c.SingleCmd{}, u2204Bootstrap...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Installer Prep commands                         //
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,6 +216,8 @@ func setUbuntuInstallerPrep() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310InstallerPrep
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204InstallerPrep
 		case ubuntuReleases[k].Release == "21.04":
@@ -287,6 +301,9 @@ var u2204InstallerPrep = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104InstallerPrep = append([]c.SingleCmd{}, u2204InstallerPrep...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310InstallerPrep = append([]c.SingleCmd{}, u2204InstallerPrep...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Install MySQL commands                          //
 ///////////////////////////////////////////////////////////////////////////////
@@ -295,6 +312,8 @@ func setUbuntuInstallMySQL() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310NoDBMySQL
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204NoDBMySQL
 		case ubuntuReleases[k].Release == "21.04":
@@ -337,6 +356,9 @@ var u2204NoDBMySQL = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104NoDBMySQL = append([]c.SingleCmd{}, u2204NoDBMySQL...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310NoDBMySQL = append([]c.SingleCmd{}, u2204NoDBMySQL...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Install Postgres commands                       //
 ///////////////////////////////////////////////////////////////////////////////
@@ -345,6 +367,8 @@ func setUbuntuInstallPostgres() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310NoDBPostgres
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204NoDBPostgres
 		case ubuntuReleases[k].Release == "21.04":
@@ -387,6 +411,9 @@ var u2204NoDBPostgres = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104NoDBPostgres = append([]c.SingleCmd{}, u2204NoDBPostgres...)
 
+// No command changes needed for Ubuntu 21.04
+var u2310NoDBPostgres = append([]c.SingleCmd{}, u2204NoDBPostgres...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Install MySQL client commands                //
 ///////////////////////////////////////////////////////////////////////////////
@@ -395,6 +422,8 @@ func setUbuntuInstallMySQLClient() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			//ubuntuReleases[k].PkgCmds = u2204InstMySQLClient
 		case ubuntuReleases[k].Release == "22.04":
 			//ubuntuReleases[k].PkgCmds = u2204InstMySQLClient
 		case ubuntuReleases[k].Release == "21.04":
@@ -420,6 +449,8 @@ func setUbuntuInstallPgClient() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310InstPgClient
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204InstPgClient
 		case ubuntuReleases[k].Release == "21.04":
@@ -478,6 +509,9 @@ var u2204InstPgClient = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104InstPgClient = append([]c.SingleCmd{}, u2204InstPgClient...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310InstPgClient = append([]c.SingleCmd{}, u2204InstPgClient...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Start MySQL commands                            //
 ///////////////////////////////////////////////////////////////////////////////
@@ -486,6 +520,8 @@ func setUbuntuStartMySQL() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2301StartMySQL
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204StartMySQL
 		case ubuntuReleases[k].Release == "21.04":
@@ -528,6 +564,9 @@ var u2204StartMySQL = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104StartMySQL = append([]c.SingleCmd{}, u2204StartMySQL...)
 
+// No command changes needed for Ubuntu 23.10
+var u2301StartMySQL = append([]c.SingleCmd{}, u2204StartMySQL...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Start Postgres commands                         //
 ///////////////////////////////////////////////////////////////////////////////
@@ -536,6 +575,8 @@ func setUbuntuStartPostgres() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310StartPostgres
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204StartPostgres
 		case ubuntuReleases[k].Release == "21.04":
@@ -578,6 +619,9 @@ var u2204StartPostgres = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104StartPostgres = append([]c.SingleCmd{}, u2204StartPostgres...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310StartPostgres = append([]c.SingleCmd{}, u2204StartPostgres...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Prep Django commands                            //
 ///////////////////////////////////////////////////////////////////////////////
@@ -586,6 +630,8 @@ func setUbuntuPrepDjango() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310PrepDjango
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204PrepDjango
 		case ubuntuReleases[k].Release == "21.04":
@@ -677,6 +723,9 @@ var u2204PrepDjango = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104PrepDjango = append([]c.SingleCmd{}, u2204PrepDjango...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310PrepDjango = append([]c.SingleCmd{}, u2204PrepDjango...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                          Create Settings commands                         //
 ///////////////////////////////////////////////////////////////////////////////
@@ -685,6 +734,8 @@ func setUbuntuCreateSettings() {
 	// Connect bootstrap commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310CreateSettings
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204CreateSettings
 		case ubuntuReleases[k].Release == "21.04":
@@ -746,6 +797,9 @@ var u2204CreateSettings = []c.SingleCmd{
 // No command changes needed for Ubuntu 21.04
 var u2104CreateSettings = append([]c.SingleCmd{}, u2204CreateSettings...)
 
+// No command changes needed for Ubuntu 23.10
+var u2310CreateSettings = append([]c.SingleCmd{}, u2204CreateSettings...)
+
 ///////////////////////////////////////////////////////////////////////////////
 //                           Setup DefectDojo commands                       //
 ///////////////////////////////////////////////////////////////////////////////
@@ -754,6 +808,8 @@ func setUbuntuSetupDojo() {
 	// Connect setup DefectDojo commands to the supported Ubuntu releases
 	for k := range ubuntuReleases {
 		switch {
+		case ubuntuReleases[k].Release == "23.10":
+			ubuntuReleases[k].PkgCmds = u2310SetupDojo
 		case ubuntuReleases[k].Release == "22.04":
 			ubuntuReleases[k].PkgCmds = u2204SetupDojo
 		case ubuntuReleases[k].Release == "21.04":
@@ -895,3 +951,6 @@ var u2204SetupDojo = []c.SingleCmd{
 
 // No command changes needed for Ubuntu 21.04
 var u2104SetupDojo = append([]c.SingleCmd{}, u2204SetupDojo...)
+
+// No command changes needed for Ubuntu 23.10
+var u2310SetupDojo = append([]c.SingleCmd{}, u2204SetupDojo...)
