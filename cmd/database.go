@@ -658,6 +658,21 @@ func prepPostgreSQL(d *DDConfig, t *targetOS) error {
 		return err
 	}
 
+	// Set the DefectDojo db user as the owner of dojodb
+	d.traceMsg("Seting DefectDojo db user as the owner of the DB")
+	setPrivs := sqlStr{
+		os:     t.id,
+		sql:    "ALTER DATABASE " + d.conf.Install.DB.Name + " OWNER TO " + d.conf.Install.DB.User + ";",
+		errMsg: "Unable to set database user as owner of DefectDojo DB",
+		creds:  creds,
+		kind:   "try",
+	}
+	_, err = runPgSQLCmd(d, setPrivs)
+	if err != nil {
+		d.traceMsg("Failed to set ownership to database user for DefectDojo DB")
+		return err
+	}
+
 	// Adjust requirements.txt to only use MySQL Python modules
 	err = trimRequirementsTxt(d, "PostgreSQL")
 	if err != nil {
