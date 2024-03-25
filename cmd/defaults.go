@@ -46,7 +46,7 @@ type DDConfig struct {
 
 // Set the godojo defaults in the DDConfig struct
 func (d *DDConfig) setGodojoDefaults() {
-	d.ver = "1.2.2"
+	d.ver = "1.2.3"
 	d.cf = "dojoConfig.yml"
 
 	// Setup default logging
@@ -74,6 +74,15 @@ func (d *DDConfig) setGodojoDefaults() {
 	d.modf = ".dd.mod"
 	d.tgzf = "gdj.tar.gz"
 
+	// Set the normal Python3 path
+	d.conf.Options.PyPath = "/usr/bin/python3"
+
+	// Use environment variable to override the deafult python binary path
+	newPath := os.Getenv("PYPATH")
+	if len(newPath) > 0 {
+		// PYPATH is set
+		d.conf.Options.PyPath = newPath
+	}
 }
 
 func (gd *DDConfig) prepLogging() io.Writer {
@@ -198,6 +207,7 @@ func (gd *DDConfig) getReplacements() map[string]string {
 	iv["{yarnGPG}"] = gd.conf.Options.YarnGPG                      // Yarn's GPG key URL
 	iv["{yarnRepo}"] = gd.conf.Options.YarnRepo                    // Yarn's package URL
 	iv["{nodeURL}"] = gd.conf.Options.NodeURL                      // Node's URL
+	iv["{PyPath}"] = gd.conf.Options.PyPath                        // Path to Python binary to use for virtualenv
 	iv["{conf.Install.Root}"] = gd.conf.Install.Root               // Path where DefectDojo is installed defaults to /opt/dojo
 	iv["{conf.Install.OS.Group}"] = gd.conf.Install.OS.Group       // OS group used by DefectDojo application
 	iv["{conf.Install.OS.User}"] = gd.conf.Install.OS.User         // OS user used by DefectDojo application

@@ -91,6 +91,11 @@ func determineLinux(d *DDConfig, tOS *targetOS) {
 			tOS.distro = "rhel"
 			tOS.release = onlyMajorVer(tOS.release)
 			tOS.id = tOS.distro + ":" + tOS.release
+			// RHEL's latest Python is 3.9, so set this as Python path
+			// to keep functionality the same as before introducing the PyPath option
+			d.conf.Options.PyPath = "/usr/bin/python3.9"
+			// The above will work for RHEL 8 or 9 with DefectDojo v 2.31.0
+			// TODO Make this check for 3.11 to handle DD versions greater than 2.31.0
 			return
 		}
 		return

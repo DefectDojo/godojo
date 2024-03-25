@@ -632,7 +632,7 @@ var rhel8PrepDjango = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "python3.9 -m virtualenv --python=/usr/bin/python3.9 {conf.Install.Root}",
+		Cmd:        "python3.9 -m virtualenv --python={PyPath} {conf.Install.Root}",
 		Errmsg:     "Unable to create virtualenv for DefectDojo",
 		Hard:       true,
 		Timeout:    0,
@@ -642,6 +642,14 @@ var rhel8PrepDjango = []c.SingleCmd{
 	c.SingleCmd{
 		Cmd:        "{conf.Install.Root}/bin/python3 -m pip install --upgrade pip",
 		Errmsg:     "Upgrade of Python pip failed",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "{conf.Install.Root}/bin/pip3 install --upgrade setuptools",
+		Errmsg:     "",
 		Hard:       true,
 		Timeout:    0,
 		BeforeText: "",
