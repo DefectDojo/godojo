@@ -14,8 +14,8 @@
 # SecretKey
 
 Install:
-  Version: "2.18.4" # DD_Version - Release version of DefectDojo from Github Releases
-  SourceInstall: true # DD_SourceInstall - Boolean if a source install is desired (vs a release)
+  Version: "2.32.2" # DD_Version - Release version of DefectDojo from Github Releases
+  SourceInstall: false # DD_SourceInstall - Boolean if a source install is desired (vs a release)
   # If ^ is true, a souce code install will occur overriding the release version provided
   SourceBranch: "master" # DD_SourceBranch - The branch's HEAD to be checked out if SourceInstall is true
   SourceCommit: # DD_SourceCommit - If there is a value here, the specific commit will be used over the branch ^
@@ -57,7 +57,7 @@ Install:
     Env: "/dojo/settings/.env.prod" # DD_SET_Env - Path to DefectDojo's environmental variables file
   Admin:
     User: "admin" # DD_ADMIN_User - Admin user for the DefectDojo web app
-    Pass: "ddadmin" # DD_ADMIN_Pass - Password for the DefectDojo web app admin user Note: set to 24 random characters
+    Pass: "P4ssword!" # DD_ADMIN_Pass - Password for the DefectDojo web app admin user Note: set to 24 random characters
     Email: "admin@localhost" # DD_ADMIN_Email - Email address for the web app admin user
     First: "Default" # DD_ADMIN_First - Web app admin users's first name
     Last: "Admin" # DD_ADMIN_Last - Web app admin users's last name

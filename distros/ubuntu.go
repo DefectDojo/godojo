@@ -662,7 +662,7 @@ func getUbuntuPrepDjango(bc *c.CmdPkg, t string) error {
 // Ubuntu 22.04 Prep Django Commands
 var u2204PrepDjango = []c.SingleCmd{
 	c.SingleCmd{
-		Cmd:        "python3 -m virtualenv --python=/usr/bin/python3 {conf.Install.Root}",
+		Cmd:        "python3 -m virtualenv --python={PyPath} {conf.Install.Root}",
 		Errmsg:     "Unable to setup virtualenv for DefectDojo",
 		Hard:       true,
 		Timeout:    0,
@@ -671,6 +671,14 @@ var u2204PrepDjango = []c.SingleCmd{
 	},
 	c.SingleCmd{
 		Cmd:        "{conf.Install.Root}/bin/python3 -m pip install --upgrade pip",
+		Errmsg:     "",
+		Hard:       true,
+		Timeout:    0,
+		BeforeText: "",
+		AfterText:  "",
+	},
+	c.SingleCmd{
+		Cmd:        "{conf.Install.Root}/bin/pip3 install --upgrade setuptools",
 		Errmsg:     "",
 		Hard:       true,
 		Timeout:    0,
