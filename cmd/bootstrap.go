@@ -74,11 +74,13 @@ func bootstrapInstall(d *DDConfig, t *targetOS) {
 
 // validPython checks to ensure the correct version of Python is available
 func validPython(d *DDConfig) {
-	d.sectionMsg("Checking for Python 3")
+	d.sectionMsg("Checking for Python 3.11")
 	if checkPythonVersion(d) {
-		d.statusMsg("Python 3 found, install can continue")
+		d.statusMsg("Python 3.11 found, install can continue")
 	} else {
-		d.errorMsg("Python 3 wasn't found, quitting installer")
+		d.errorMsg("Python 3.11 wasn't found, quitting installer\n" +
+			"         Please set PYPATH to a Python 3.11.x installation\n" +
+			"         And re-run godojo like: 'PYPATH=\"/path/to/python3.11\" ./godojo'")
 		os.Exit(1)
 	}
 }
@@ -88,12 +90,12 @@ func checkPythonVersion(d *DDConfig) bool {
 	// DefectDojo is now Python 3+, lets make sure that's installed
 	_, err := exec.LookPath("python3")
 	if err != nil {
-		d.errorMsg(fmt.Sprintf("Unable to find python binary. Error was: %+v", err))
+		d.errorMsg(fmt.Sprintf("Unable to find python binary in the path. Error was: %+v", err))
 		os.Exit(1)
 	}
 
 	// Execute the python3 command with --version to get the version
-	runCmd := exec.Command("python3", "--version")
+	runCmd := exec.Command(d.conf.Options.PyPath, "--version")
 
 	// Run command and gather its output
 	cmdOut, err := runCmd.CombinedOutput()
@@ -108,7 +110,7 @@ func checkPythonVersion(d *DDConfig) bool {
 	pyVer := line[1]
 
 	// Return true or false depending on Python version
-	return strings.HasPrefix(pyVer, "3.")
+	return strings.HasPrefix(pyVer, "3.11")
 }
 
 // downloadDojo takes a ponter to DDConfig and downloads a release or source
