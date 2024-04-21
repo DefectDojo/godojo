@@ -46,7 +46,7 @@ type DDConfig struct {
 
 // Set the godojo defaults in the DDConfig struct
 func (d *DDConfig) setGodojoDefaults() {
-	d.ver = "1.2.3"
+	d.ver = "1.2.4"
 	d.cf = "dojoConfig.yml"
 
 	// Setup default logging
