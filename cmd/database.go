@@ -394,7 +394,7 @@ func prepMySQL(d *DDConfig, osTar string) error {
 	d.traceMsg("Creating MySQL DB user for DefectDojo")
 	createUsr := sqlStr{
 		os: osTar,
-		sql: "CREATE USER '" + d.conf.Install.DB.User + "'@'" + usrHost +
+		sql: "CREATE USER IF NOT EXISTS'" + d.conf.Install.DB.User + "'@'" + usrHost +
 			"' IDENTIFIED BY '" + d.conf.Install.DB.Pass + "';",
 		errMsg: "Unable to create a MySQL database user for DefectDojo",
 		creds:  creds,
@@ -625,8 +625,8 @@ func prepPostgreSQL(d *DDConfig, t *targetOS) error {
 	d.traceMsg("Creating PostgreSQL DB user for DefectDojo")
 	createUsr := sqlStr{
 		os: t.id,
-		sql: "CREATE USER " + d.conf.Install.DB.User + " WITH ENCRYPTED PASSWORD '" +
-			d.conf.Install.DB.Pass + "';",
+		sql: "DO $do$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '" + d.conf.Install.DB.User + "') THEN RAISE NOTICE 'User already exists. Skipping.'; ELSE BEGIN CREATE USER " + d.conf.Install.DB.User + " WITH ENCRYPTED PASSWORD '" +
+			d.conf.Install.DB.Pass + "'; EXCEPTION WHEN duplicate_object THEN RAISE NOTICE 'User was created by a concurrent transaction. Skipping.'; END; END IF; END $do$;",
 		errMsg: "Unable to create a PostgreSQL database user for DefectDojo",
 		creds:  creds,
 		kind:   "try",
