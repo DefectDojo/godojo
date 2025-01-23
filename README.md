@@ -1,4 +1,12 @@
-# godojo - an installer for DefectDojo
+# DEPRECATION WARNING
+
+Unfortunately, godojo is in the process of being deprecated so we're not going to be making any substantive changes going forward.
+
+For details on deprecating godojo - see the GH discussion at:
+https://github.com/DefectDojo/django-DefectDojo/discussions/11199
+in the "Future Deprecation: Iron installs via godojo" section.
+
+## godojo - an installer for DefectDojo
 
 godojo is an installer for DefectDojo created as a much more powerful replacement for setup.bash.  It provides a way to complete a 'server' install of DefectDojo. This is a traditional installation where DefectDojo is installed on the disk of a server/VM as part of the running OS.
 
