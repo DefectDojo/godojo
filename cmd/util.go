@@ -55,6 +55,25 @@ func untar(d *DDConfig, dst string, r io.Reader) error {
 		// the target location where the dir/file should be created
 		target := filepath.Join(dst, header.Name)
 
+		// Protect against directory traversal (Zip Slip)
+		dstAbs, err := filepath.Abs(dst)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for destination: %v", err)
+		}
+		targetAbs, err := filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for target: %v", err)
+		}
+		rel, err := filepath.Rel(dstAbs, targetAbs)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path from destination to target: %v", err)
+		}
+		// If rel starts with ".." (or is ".."), then the target is outside the destination directory
+		if strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+			d.errorMsg(fmt.Sprintf("Skipping potentially unsafe tar entry: %q, would extract outside target dir", header.Name))
+			continue
+		}
+
 		// check the file type
 		switch header.Typeflag {
 		// if its a dir and it doesn't exist create it
