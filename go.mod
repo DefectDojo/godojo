@@ -7,7 +7,7 @@ require (
 	github.com/mtesauro/commandeer v1.1.4
 	github.com/spf13/viper v1.4.0
 	golang.org/x/text v0.13.0
-	gopkg.in/src-d/go-git.v4 v4.12.0
+	github.com/go-git/go-git/v5 v5.12.0
 )
 
 require (
@@ -22,19 +22,18 @@ require (
 	github.com/mattn/go-isatty v0.0.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
-	github.com/pelletier/go-buffruneio v0.2.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/src-d/gcfg v1.4.0 // indirect
+	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
+	github.com/go-git/go-billy/v5 v5.6.1 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
