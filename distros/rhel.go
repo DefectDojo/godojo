@@ -242,7 +242,7 @@ var rhel8InstallerPrep = []c.SingleCmd{
 		AfterText:  "",
 	},
 	c.SingleCmd{
-		Cmd:        "curl --silent --location https://rpm.nodesource.com/setup_18.x | sudo bash -",
+		Cmd:        "curl --silent --location https://rpm.nodesource.com/setup_22.x | sudo bash -",
 		Errmsg:     "Unable to add yard repo as an apt source",
 		Hard:       true,
 		Timeout:    0,
