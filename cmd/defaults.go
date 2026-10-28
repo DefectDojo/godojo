@@ -63,7 +63,7 @@ func (d *DDConfig) setGodojoDefaults() {
 	d.cloneURL = "https://github.com/DefectDojo/django-DefectDojo.git"
 	d.yarnGPG = "https://dl.yarnpkg.com/debian/pubkey.gpg"
 	d.yarnRepo = "deb https://dl.yarnpkg.com/debian/ stable main"
-	d.nodeURL = "https://deb.nodesource.com/setup_18.x"
+	d.nodeURL = "https://deb.nodesource.com/setup_22.x"
 	d.quiet = false
 	d.traceOn = true
 	d.redact = true
